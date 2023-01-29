@@ -22,6 +22,8 @@ Route::get('product-by-code', [App\Http\Controllers\ProductController::class, 'f
 Route::get('product-by-code/{code}', [App\Http\Controllers\ProductController::class, 'findByCode2']);
 
 Route::post('product-save-all', [App\Http\Controllers\ProductController::class, 'saveAll']);
+Route::post('product/{id}', [App\Http\Controllers\ProductController::class, 'destroy']);
+
 
 //Só fazer igual de produto
 Route::apiResource('ean', 'BarcodeController');
