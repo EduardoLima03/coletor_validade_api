@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\DB;
 
 class BarcodeController extends Controller
 {
+    public function __construct(Barcode $barcode) {
+        $this->barcode = $barcode;
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -15,7 +19,7 @@ class BarcodeController extends Controller
      */
     public function index()
     {
-      return Barcode::all();
+      return $this->barcode->all();
     }
 
     /**
@@ -26,7 +30,7 @@ class BarcodeController extends Controller
      */
     public function store(Request $request)
     {
-        return Barcode::create($request->all());
+        return $this->barcode->create($request->all());
     }
 
     /**
@@ -37,7 +41,7 @@ class BarcodeController extends Controller
      */
     public function show($id)
     {
-        return Barcode::findOrFail($id);
+        return $this->barcode->findOrFail($id);
     }
 
     /**
@@ -74,8 +78,32 @@ class BarcodeController extends Controller
     }
 
     public function findByEan($ean){
-        $product = DB::select('select p.code, p.description, b.ean  from barcodes as b inner join products as p on p.id = b.product_id where b.ean ='.$ean);
+        //Quando usa a consulta personalizada ele sempre retorna uma lista 
+        //$product = DB::select('select p.code, p.description, b.ean  from barcodes as b inner join products as p on p.id = b.product_id where b.ean ='.$ean);
 
+        //primeiro metodo
+        $product = DB::table('barcodes')
+                    ->join('products', 'products.id', 'barcodes.product_id')
+                    ->select('products.code', 'products.description', 'barcodes.ean')
+                    ->where('barcodes.ean', $ean)
+                    ->get()
+                    ->first();
+
+        //$product = DB::select('select p.code, p.description, b.ean  from barcodes as b inner join products as p on p.id = b.product_id where b.ean ='.$ean fetch first 1 rows only)->get()->first();
+        /*
+            Esse metodo acredito que vc possa usar o get()->first() tbm ao final, so tem que testar, nao lembro de funciona. cara ai posso faça a consulta que retorne o primeiro item, so nao sei se o laravel reconece e retorna 1 unico ou inda vai joga em uma lista
+            Nao, sempre que vc usar uma consulta personalida com where, ele retorna em uma lista, ai vc tem que pegar o primeiro elemento
+            nao lebro se funciona dessa forma de cima, vc testa para saber
+            mas da forma de cima funciona perfeitamente
+        */
+
+
+        //Se o produto náo existir retorna essa msg de erro com o codigo 404 not found
+        if($product == null) {
+            return response()->json(['Erro' => 'Produto nao encontrado'], 404);
+        }
+
+            // foi mal
         return response()->json($product, 200);
     }
 }
