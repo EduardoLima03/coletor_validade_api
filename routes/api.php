@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 //funcionou assim, mas ta muito estranho, vou verificar com mais calma depois, pq uso o Laravel 8
-Route::apiResource('product', 'ProductController');
+/*Route::apiResource('product', 'ProductController');
 
 //O laravel deve está identificando a paravra find-by-code como se fosse o id do produto
 Route::get('product-by-code', [App\Http\Controllers\ProductController::class, 'findByCode']);
@@ -29,9 +29,25 @@ Route::delete('product/{id}', [App\Http\Controllers\ProductController::class, 'd
 Route::apiResource('ean', 'BarcodeController');
 
 Route::post('ean-save-all', [App\Http\Controllers\BarcodeController::class, 'saveAll']);
-Route::get('by-ean/{ean}', [App\Http\Controllers\BarcodeController::class, 'findByEan']);
+Route::get('by-ean/{ean}', [App\Http\Controllers\BarcodeController::class, 'findByEan']);*/
 
+
+
+//Autenticação
+Route::post('/login', [App\Http\Controllers\UserController::class, 'login']);
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+Route::middleware('auth:sanctum')->group(function(){
+    Route::get('by-ean/{ean}', [App\Http\Controllers\BarcodeController::class, 'findByEan']);
+    Route::apiResource('ean', 'BarcodeController');
+    Route::post('ean-save-all', [App\Http\Controllers\BarcodeController::class, 'saveAll']);
+    // product
+    Route::apiResource('product', 'ProductController');
+    Route::get('product-by-code', [App\Http\Controllers\ProductController::class, 'findByCode']);
+    Route::get('product-by-code/{code}', [App\Http\Controllers\ProductController::class, 'findByCode2']);
+    Route::post('product-save-all', [App\Http\Controllers\ProductController::class, 'saveAll']);
+    Route::delete('product/{id}', [App\Http\Controllers\ProductController::class, 'destroy']);
 });
