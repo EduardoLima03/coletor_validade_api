@@ -35,6 +35,7 @@ Route::get('by-ean/{ean}', [App\Http\Controllers\BarcodeController::class, 'find
 
 //Autenticação
 Route::post('/login', [App\Http\Controllers\UserController::class, 'login']);
+Route::post('/user', [App\Http\Controllers\UserController::class, 'store']);
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
