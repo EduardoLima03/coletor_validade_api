@@ -19,7 +19,7 @@ class UserController extends Controller
             }
             $token = $user->createToken('JWT');
 
-            return response()->json(['token' => $token->plainTextToken, 'user' => ['name' => $user->name, 'function' => $user->functiongit ]], 200);
+            return response()->json(['token' => $token->plainTextToken, 'user' => ['name' => $user->name, 'function' => $user->function]], 200);
         }
         return response()->json('Usuario invalido', 401);
     }
