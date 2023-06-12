@@ -19,7 +19,7 @@ class UserController extends Controller
             }
             $token = $user->createToken('JWT');
 
-            return response()->json(['token' => $token->plainTextToken, 'user' => ['id' => $user->id, 'name' => $user->name, 'function' => $user->function]], 200);
+            return response()->json(['token' => $token->plainTextToken, 'user' => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'function' => $user->function]], 200);
         }
         return response()->json('Usuario invalido', 401);
     }
@@ -43,7 +43,12 @@ class UserController extends Controller
        
         try{
             $user = User::findOrFail($id);
-            $user->update($request->all());
+            $user->update([
+                'name' => $request->name,
+                'email' => $request->email,
+                'function' => $request->function,
+                'password' => Hash::make($request->new_password)
+            ]);
             return response()->json(['success' => 'Update realizado'], 200);
         }catch(Exception $e){
             return response()->json(['error' => $e->getMessage()], 500);
