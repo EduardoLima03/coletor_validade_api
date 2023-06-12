@@ -51,4 +51,5 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::get('product-by-code/{code}', [App\Http\Controllers\ProductController::class, 'findByCode2']);
     Route::post('product-save-all', [App\Http\Controllers\ProductController::class, 'saveAll']);
     Route::delete('product/{id}', [App\Http\Controllers\ProductController::class, 'destroy']);
+    Route::post('user-update/{id}', [App\Http\Controllers\UserController::class, 'update']);
 });
