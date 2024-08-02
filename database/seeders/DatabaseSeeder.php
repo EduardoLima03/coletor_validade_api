@@ -27,37 +27,37 @@ class DatabaseSeeder extends Seeder
         DB::table('users')->insert([
             [
                 'name' => 'Validação',
-                'function' => 'Validação',
+                'position' => 'Validação',
                 'email' => 'validacao@medeiros.api',
                 'password' => Hash::make('360632'),
             ],
             [
                 'name' => 'Carlos Lima',
-                'function' => 'Adim',
+                'position' => 'Adim',
                 'email' => 'carlos@medeiros.api',
                 'password' => Hash::make('3012api'),
             ],
             [
                 'name' => 'Repositor',
-                'function' => 'Repositor',
+                'position' => 'Repositor',
                 'email' => 'repositor@medeiros.api',
                 'password' => Hash::make('360632'),
             ],
             [
                 'name' => 'Promotor',
-                'function' => 'promotor',
+                'position' => 'promotor',
                 'email' => 'promotor@medeiros.api',
                 'password' => Hash::make('360632'),
             ],
             [
                 'name' => 'Brigada de validade',
-                'function' => 'brigada',
+                'position' => 'brigada',
                 'email' => 'brigada@medeiros.api',
                 'password' => Hash::make('360632'),
             ],
             [
                 'name' => 'Controladoria',
-                'function' => 'controladoria',
+                'position' => 'controladoria',
                 'email' => 'controladoria@medeiros.api',
                 'password' => Hash::make('360632'),
             ]
