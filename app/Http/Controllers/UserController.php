@@ -19,14 +19,14 @@ class UserController extends Controller
             }
             $token = $user->createToken('JWT');
 
-            return response()->json(['token' => $token->plainTextToken, 'user' => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'function' => $user->function]], 200);
+            return response()->json(['token' => $token->plainTextToken, 'user' => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'position' => $user->function]], 200);
         }
         return response()->json('Usuario invalido', 401);
     }
 
     public function store(Request $request, User $user)
     {
-        $userData = $request->only('name', 'email', 'password', 'function');
+        $userData = $request->only('name', 'email', 'password', 'position');
         $userData['password'] = Hash::make($userData['password']);
         if(!$user = $user->create($userData)){
             abort(500, "Erro");
@@ -46,7 +46,7 @@ class UserController extends Controller
             $user->update([
                 'name' => $request->name,
                 'email' => $request->email,
-                'function' => $request->function,
+                'position' => $request->function,
                 'password' => Hash::make($request->new_password)
             ]);
             return response()->json(['success' => 'Update realizado'], 200);
