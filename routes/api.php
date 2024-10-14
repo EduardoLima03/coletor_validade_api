@@ -37,9 +37,11 @@ Route::get('by-ean/{ean}', [App\Http\Controllers\BarcodeController::class, 'find
 Route::post('/login', [App\Http\Controllers\UserController::class, 'login']);
 Route::post('/user', [App\Http\Controllers\UserController::class, 'store']);
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+Route::get('/users', [App\Http\Controllers\UserController::class,'index']);
+
+/*Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
-});
+});*/
 
 Route::middleware('auth:sanctum')->group(function(){
     Route::get('by-ean/{ean}', [App\Http\Controllers\BarcodeController::class, 'findByEan']);

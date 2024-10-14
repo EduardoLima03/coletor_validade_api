@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
+    public function index(){
+        $users = User::all();
+        return response()->json($users);
+    }
+
     public function login(Request $request){
         if(Auth::attempt(['email' => $request -> email, 'password' => $request -> password])){
             $user = Auth::user();
