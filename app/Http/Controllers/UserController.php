@@ -19,7 +19,7 @@ class UserController extends Controller
             }
             $token = $user->createToken('JWT');
 
-            return response()->json(['token' => $token->plainTextToken, 'user' => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'position' => $user->function]], 200);
+            return response()->json(['token' => $token->plainTextToken, 'user' => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'position' => $user->position]], 200);
         }
         return response()->json('Usuario invalido', 401);
     }
@@ -38,9 +38,32 @@ class UserController extends Controller
         return response()->json(['success' => 'Usuario criado com sucesso.'], 200);*/
     }
 
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user();
+
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'password' => 'nullable|string|min:6|confirmed',
+        ]);
+
+        $updateData = ['name' => $data['name']];
+
+        if (!empty($data['password'])) {
+            $updateData['password'] = Hash::make($data['password']);
+        }
+
+        $user->update($updateData);
+
+        return response()->json([
+            'success' => 'Perfil atualizado com sucesso.',
+            'user' => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'position' => $user->position]
+        ], 200);
+    }
+
     public function update(Request $request, $id)
     {
-       
+        
         try{
             $user = User::findOrFail($id);
             $user->update([

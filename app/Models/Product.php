@@ -9,5 +9,10 @@ class Product extends Model
 {
     use HasFactory;
 
-    protected $fillable = [ 'code', 'description'];
+    protected $fillable = ['code', 'description'];
+
+    public function barcodes()
+    {
+        return $this->hasMany(Barcode::class);
+    }
 }

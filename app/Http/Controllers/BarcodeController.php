@@ -2,108 +2,75 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreBarcodeRequest;
+use App\Http\Requests\UpdateBarcodeRequest;
 use App\Models\Barcode;
+use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class BarcodeController extends Controller
 {
-    public function __construct(Barcode $barcode) {
+    public function __construct(Barcode $barcode)
+    {
         $this->barcode = $barcode;
     }
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index()
     {
-      return $this->barcode->all();
+        return $this->barcode->with('product')->get();
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
+    public function store(StoreBarcodeRequest $request)
     {
-        return $this->barcode->create($request->all());
+        return $this->barcode->create($request->validated());
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function show($id)
     {
-        return $this->barcode->findOrFail($id);
+        return $this->barcode->with('product')->findOrFail($id);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
+    public function update(UpdateBarcodeRequest $request, $id)
     {
-        //
+        $barcode = $this->barcode->findOrFail($id);
+        $barcode->update($request->validated());
+        return response()->json(['success' => 'EAN atualizado com sucesso.', 'data' => $barcode], 200);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function destroy($id)
     {
-        //
+        $barcode = $this->barcode->findOrFail($id);
+        $barcode->delete();
+        return response()->json(['message' => 'EAN deletado com sucesso.'], 200);
     }
 
-    public function saveAll(Request $request){
-        $barcodes = $request->all();
+    public function saveAll(Request $request)
+    {
+        $barcodes = $request->validate([
+            '*.ean' => 'required|integer|unique:barcodes,ean',
+            '*.product_id' => 'required|integer|exists:products,id',
+        ]);
 
-        foreach($barcodes as $key => $barcode){
-            Product::create($barcode);
+        $created = [];
+        foreach ($barcodes as $barcode) {
+            $created[] = Barcode::create($barcode);
         }
 
-        return response()->json(['success' => 'EANs cadastrados com sucesso.'], 200);
+        return response()->json(['success' => 'EANs cadastrados com sucesso.', 'data' => $created], 201);
     }
 
-    public function findByEan($ean){
-        //Quando usa a consulta personalizada ele sempre retorna uma lista 
-        //$product = DB::select('select p.code, p.description, b.ean  from barcodes as b inner join products as p on p.id = b.product_id where b.ean ='.$ean);
+    public function findByEan($ean)
+    {
+        $product = \DB::table('barcodes')
+            ->join('products', 'products.id', 'barcodes.product_id')
+            ->select('products.code', 'products.description', 'barcodes.ean')
+            ->where('barcodes.ean', $ean)
+            ->first();
 
-        //primeiro metodo
-        $product = DB::table('barcodes')
-                    ->join('products', 'products.id', 'barcodes.product_id')
-                    ->select('products.code', 'products.description', 'barcodes.ean')
-                    ->where('barcodes.ean', $ean)
-                    ->get()
-                    ->first();
-
-        //$product = DB::select('select p.code, p.description, b.ean  from barcodes as b inner join products as p on p.id = b.product_id where b.ean ='.$ean fetch first 1 rows only)->get()->first();
-        /*
-            Esse metodo acredito que vc possa usar o get()->first() tbm ao final, so tem que testar, nao lembro de funciona. cara ai posso faça a consulta que retorne o primeiro item, so nao sei se o laravel reconece e retorna 1 unico ou inda vai joga em uma lista
-            Nao, sempre que vc usar uma consulta personalida com where, ele retorna em uma lista, ai vc tem que pegar o primeiro elemento
-            nao lebro se funciona dessa forma de cima, vc testa para saber
-            mas da forma de cima funciona perfeitamente
-        */
-
-
-        //Se o produto náo existir retorna essa msg de erro com o codigo 404 not found
-        if($product == null) {
+        if (!$product) {
             return response()->json(['Erro' => 'Produto nao encontrado'], 404);
         }
 
-            // foi mal
         return response()->json($product, 200);
     }
 }
