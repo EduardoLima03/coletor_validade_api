@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Product;
 use Illuminate\Http\Request;
 
@@ -41,7 +42,9 @@ class ProductController extends Controller
             'description' => 'required|string|max:255',
         ]);
 
-        Product::create($data);
+        $product = Product::create($data);
+
+        AuditLog::log('create', 'product', $product->id, "Criou produto [{$product->code}] {$product->description}");
 
         return redirect()->route('admin.products.index')
             ->with('success', 'Produto cadastrado com sucesso.');
@@ -70,6 +73,8 @@ class ProductController extends Controller
 
         $product->update($data);
 
+        AuditLog::log('update', 'product', $product->id, "Atualizou produto [{$product->code}] {$product->description}");
+
         return redirect()->route('admin.products.index')
             ->with('success', 'Produto atualizado com sucesso.');
     }
@@ -77,8 +82,11 @@ class ProductController extends Controller
     public function destroy($id)
     {
         $product = Product::findOrFail($id);
+        $desc = "[{$product->code}] {$product->description}";
         $product->barcodes()->delete();
         $product->delete();
+
+        AuditLog::log('delete', 'product', $id, "Deletou produto {$desc}");
 
         return redirect()->route('admin.products.index')
             ->with('success', 'Produto deletado com sucesso.');

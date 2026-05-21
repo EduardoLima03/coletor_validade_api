@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Barcode;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -85,6 +86,8 @@ class ImportController extends Controller
         if ($stats['errors'] > 0) {
             $message .= ", Erros: {$stats['errors']}";
         }
+
+        AuditLog::log('import', 'csv', 0, "Importou CSV: {$message}");
 
         return back()->with('success', $message);
     }

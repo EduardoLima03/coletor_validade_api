@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -44,7 +45,9 @@ class UserController extends Controller
 
         $data['password'] = Hash::make($data['password']);
 
-        User::create($data);
+        $user = User::create($data);
+
+        AuditLog::log('create', 'user', $user->id, "Criou usuário {$user->name} ({$user->email}) como {$user->position}");
 
         return redirect()->route('admin.users.index')
             ->with('success', 'Usuário cadastrado com sucesso.');
@@ -81,6 +84,8 @@ class UserController extends Controller
 
         $user->update($data);
 
+        AuditLog::log('update', 'user', $user->id, "Atualizou usuário {$user->name} ({$user->email})");
+
         return redirect()->route('admin.users.index')
             ->with('success', 'Usuário atualizado com sucesso.');
     }
@@ -94,7 +99,10 @@ class UserController extends Controller
                 ->with('error', 'Você não pode excluir o próprio usuário.');
         }
 
+        $name = $user->name;
         $user->delete();
+
+        AuditLog::log('delete', 'user', $id, "Deletou usuário {$name}");
 
         return redirect()->route('admin.users.index')
             ->with('success', 'Usuário deletado com sucesso.');

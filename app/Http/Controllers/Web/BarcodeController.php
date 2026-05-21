@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Barcode;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -43,7 +44,9 @@ class BarcodeController extends Controller
             'product_id' => 'required|integer|exists:products,id',
         ]);
 
-        Barcode::create($data);
+        $barcode = Barcode::create($data);
+
+        AuditLog::log('create', 'barcode', $barcode->id, "Criou EAN {$barcode->ean} para produto #{$barcode->product_id}");
 
         return redirect()->route('admin.barcodes.index')
             ->with('success', 'Código de barras cadastrado com sucesso.');
@@ -73,6 +76,8 @@ class BarcodeController extends Controller
 
         $barcode->update($data);
 
+        AuditLog::log('update', 'barcode', $barcode->id, "Atualizou EAN {$barcode->ean} para produto #{$barcode->product_id}");
+
         return redirect()->route('admin.barcodes.index')
             ->with('success', 'Código de barras atualizado com sucesso.');
     }
@@ -80,7 +85,10 @@ class BarcodeController extends Controller
     public function destroy($id)
     {
         $barcode = Barcode::findOrFail($id);
+        $ean = $barcode->ean;
         $barcode->delete();
+
+        AuditLog::log('delete', 'barcode', $id, "Deletou EAN {$ean}");
 
         return redirect()->route('admin.barcodes.index')
             ->with('success', 'Código de barras deletado com sucesso.');

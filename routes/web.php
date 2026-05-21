@@ -40,5 +40,10 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
             ->names(['index' => 'users.index', 'create' => 'users.create', 'store' => 'users.store',
                      'show' => 'users.show', 'edit' => 'users.edit', 'update' => 'users.update',
                      'destroy' => 'users.destroy']);
+
+        Route::get('/auditoria', [App\Http\Controllers\Web\AuditController::class, 'index'])
+            ->name('audit.index');
+        Route::get('/auditoria/{id}', [App\Http\Controllers\Web\AuditController::class, 'show'])
+            ->name('audit.show');
     });
 });

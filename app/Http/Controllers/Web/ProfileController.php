@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -29,6 +30,8 @@ class ProfileController extends Controller
         }
 
         $user->update($updateData);
+
+        AuditLog::log('update', 'profile', $user->id, "Atualizou próprio perfil");
 
         return redirect()->route('admin.profile.edit')
             ->with('success', 'Perfil atualizado com sucesso.');

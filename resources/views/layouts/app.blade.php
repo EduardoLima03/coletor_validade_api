@@ -116,6 +116,12 @@
                                 <i class="bi bi-people"></i> Usuários
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.audit.*') ? 'active' : '' }}"
+                               href="{{ route('admin.audit.index') }}">
+                                <i class="bi bi-journal-text"></i> Auditoria
+                            </a>
+                        </li>
                     @endif
                 </ul>
                 <ul class="navbar-nav">
