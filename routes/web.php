@@ -2,6 +2,11 @@
 
 use Illuminate\Support\Facades\Route;
 
+Route::get('/migrate', function () {
+    Artisan::call('migrate', ['--force' => true]);
+    return 'ok';
+});
+
 Route::get('/', function () {
     return redirect('/login');
 });
@@ -12,6 +17,9 @@ Route::post('/login', [App\Http\Controllers\Web\AuthController::class, 'login'])
     ->name('admin.login');
 
 Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [App\Http\Controllers\Web\DashboardController::class, 'index'])
+        ->name('dashboard');
+
     Route::post('/logout', [App\Http\Controllers\Web\AuthController::class, 'logout'])
         ->name('logout');
 
@@ -34,12 +42,46 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
         ->name('import.form');
     Route::post('/importar/processar', [App\Http\Controllers\Web\ImportController::class, 'processFile'])
         ->name('import.process');
+    Route::post('/importar/iniciar', [App\Http\Controllers\Web\ImportController::class, 'start'])
+        ->name('import.start');
+    Route::post('/importar/processar-lote', [App\Http\Controllers\Web\ImportController::class, 'chunk'])
+        ->name('import.chunk');
+    Route::get('/importar/progresso', [App\Http\Controllers\Web\ImportController::class, 'progress'])
+        ->name('import.progress');
+
+    Route::resource('lojas', App\Http\Controllers\Web\LojaController::class)
+        ->names(['index' => 'lojas.index', 'create' => 'lojas.create', 'store' => 'lojas.store',
+                 'edit' => 'lojas.edit', 'update' => 'lojas.update',
+                 'destroy' => 'lojas.destroy']);
+
+    Route::get('/coletas', [App\Http\Controllers\Web\ColetaController::class, 'index'])
+        ->name('coletas.index');
+    Route::get('/coletas/exportar/xlsx', [App\Http\Controllers\Web\ColetaController::class, 'exportXlsx'])
+        ->name('coletas.export.xlsx');
+    Route::get('/coletas/exportar/csv', [App\Http\Controllers\Web\ColetaController::class, 'exportCsv'])
+        ->name('coletas.export.csv');
+    Route::get('/coletas/{coleta}/edit', [App\Http\Controllers\Web\ColetaController::class, 'edit'])
+        ->name('coletas.edit');
+    Route::put('/coletas/{coleta}', [App\Http\Controllers\Web\ColetaController::class, 'update'])
+        ->name('coletas.update');
+    Route::delete('/coletas/{coleta}', [App\Http\Controllers\Web\ColetaController::class, 'destroy'])
+        ->name('coletas.destroy');
 
     Route::middleware('role:ADMIN')->group(function () {
         Route::resource('users', App\Http\Controllers\Web\UserController::class)
             ->names(['index' => 'users.index', 'create' => 'users.create', 'store' => 'users.store',
                      'show' => 'users.show', 'edit' => 'users.edit', 'update' => 'users.update',
                      'destroy' => 'users.destroy']);
+
+        Route::resource('areas-auditoria', App\Http\Controllers\Web\AreaAuditoriaController::class)
+            ->names(['index' => 'areas-auditoria.index', 'create' => 'areas-auditoria.create',
+                     'store' => 'areas-auditoria.store', 'edit' => 'areas-auditoria.edit',
+                     'update' => 'areas-auditoria.update', 'destroy' => 'areas-auditoria.destroy']);
+
+        Route::get('/importar/coletas', [App\Http\Controllers\Web\ColetaImportController::class, 'showForm'])
+            ->name('importar.coletas.form');
+        Route::post('/importar/coletas/processar', [App\Http\Controllers\Web\ColetaImportController::class, 'import'])
+            ->name('importar.coletas.processar');
 
         Route::get('/auditoria', [App\Http\Controllers\Web\AuditController::class, 'index'])
             ->name('audit.index');

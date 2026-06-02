@@ -1,0 +1,16 @@
+.git
+.gitignore
+.env
+node_modules
+npm-debug.log
+yarn-error.log
+VALIDADE.csv
+storage/framework/cache/data/*
+!storage/framework/cache/data/.gitkeep
+storage/framework/sessions/*
+!storage/framework/sessions/.gitkeep
+storage/framework/views/*
+!storage/framework/views/.gitkeep
+storage/logs/*
+!storage/logs/.gitkeep
+storage/app/imports/*

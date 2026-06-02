@@ -1,0 +1,88 @@
+<?php
+
+namespace App\Exports;
+
+use App\Models\Coleta;
+use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+
+class ColetasExport implements FromQuery, WithHeadings, WithMapping, WithStyles
+{
+    protected $lojaId;
+    protected $dias;
+    protected $dataInicio;
+    protected $dataFim;
+
+    public function __construct($lojaId = null, $dias = null, $dataInicio = null, $dataFim = null)
+    {
+        $this->lojaId = $lojaId;
+        $this->dias = $dias;
+        $this->dataInicio = $dataInicio;
+        $this->dataFim = $dataFim;
+    }
+
+    public function query()
+    {
+        $query = Coleta::with("loja", "user", "areaAuditoria");
+
+        if ($this->lojaId) {
+            $query->where("loja_id", $this->lojaId);
+        }
+
+        if ($this->dias) {
+            $query->whereDate("data_validade", "<=", now()->addDays((int) $this->dias));
+        }
+
+        if ($this->dataInicio) {
+            $query->whereDate("data_validade", ">=", $this->dataInicio);
+        }
+
+        if ($this->dataFim) {
+            $query->whereDate("data_validade", "<=", $this->dataFim);
+        }
+
+        return $query->orderBy("data_validade");
+    }
+
+    public function headings(): array
+    {
+        return [
+            "ID",
+            "Loja",
+            "Auditor",
+            "Setor",
+            "Descricao",
+            "EAN",
+            "Quantidade",
+            "Validade",
+            "Dias a Vencer",
+            "Data/Hora",
+        ];
+    }
+
+    public function map($coleta): array
+    {
+        return [
+            $coleta->id,
+            $coleta->loja->nome ?? "-",
+            $coleta->user->name ?? "-",
+            $coleta->areaAuditoria->nome ?? "-",
+            $coleta->descricao,
+            $coleta->ean,
+            $coleta->quantidade,
+            $coleta->data_validade->format("d/m/Y"),
+            $coleta->dias_a_vencer,
+            $coleta->datahora ? $coleta->datahora->format("d/m/Y H:i") : "-",
+        ];
+    }
+
+    public function styles(Worksheet $sheet)
+    {
+        return [
+            1 => ["font" => ["bold" => true, "color" => ["rgb" => "FFFFFF"]], "fill" => ["fillType" => "solid", "startColor" => ["rgb" => "005922"]]],
+        ];
+    }
+}

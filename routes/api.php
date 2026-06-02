@@ -16,6 +16,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('product-by-code', [App\Http\Controllers\ProductController::class, 'findByCode']);
     Route::get('product-by-code/{code}', [App\Http\Controllers\ProductController::class, 'findByCode2']);
     Route::get('by-ean/{ean}', [App\Http\Controllers\BarcodeController::class, 'findByEan']);
+
+    Route::post('coleta', [App\Http\Controllers\Api\ColetaController::class, 'store']);
+    Route::put('coleta/{id}', [App\Http\Controllers\Api\ColetaController::class, 'update']);
+    Route::get('coleta/check', [App\Http\Controllers\Api\ColetaController::class, 'check']);
+
+    Route::get('lojas', [App\Http\Controllers\Api\LojaController::class, 'index']);
+    Route::get('areas-auditoria', [App\Http\Controllers\Api\AreaAuditoriaController::class, 'index']);
 });
 
 Route::middleware(['auth:sanctum', 'role:GERENCIA,ADMIN'])->group(function () {

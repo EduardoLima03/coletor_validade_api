@@ -7,10 +7,15 @@ use App\Models\AuditLog;
 use App\Models\Barcode;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ImportController extends Controller
 {
+    private const CACHE_PREFIX = 'import_progress_';
+    private const CHUNK_SIZE = 200;
+
     public function showForm()
     {
         return view('admin.import.form');
@@ -21,15 +26,24 @@ class ImportController extends Controller
         set_time_limit(0);
         ini_set('memory_limit', '512M');
 
-        $filePath = base_path('VALIDADE.csv');
+        $filePath = $this->resolveFilePath($request);
 
-        if ($request->hasFile('csv_file')) {
-            $file = $request->file('csv_file');
-            $filePath = $file->getRealPath();
+        if (!$filePath || !file_exists($filePath)) {
+            $msg = 'Arquivo CSV não encontrado.';
+            return $request->expectsJson()
+                ? response()->json(['error' => $msg], 400)
+                : back()->with('error', $msg);
         }
 
-        if (!file_exists($filePath)) {
-            return back()->with('error', 'Arquivo CSV não encontrado.');
+        $handle = fopen($filePath, 'r');
+        $header = fgetcsv($handle, 0, ',', '"');
+
+        if (!$header || count($header) < 3) {
+            fclose($handle);
+            $msg = 'Formato CSV inválido. Colunas esperadas: COD,DESCRICAO,EAN';
+            return $request->expectsJson()
+                ? response()->json(['error' => $msg], 400)
+                : back()->with('error', $msg);
         }
 
         $stats = [
@@ -41,16 +55,7 @@ class ImportController extends Controller
             'total_rows' => 0,
         ];
 
-        $handle = fopen($filePath, 'r');
-        $header = fgetcsv($handle, 0, ',', '"');
-
-        if (!$header || count($header) < 3) {
-            fclose($handle);
-            return back()->with('error', 'Formato CSV inválido. Colunas esperadas: COD,DESCRICAO,EAN');
-        }
-
         $chunk = [];
-        $chunkSize = 500;
 
         while (($row = fgetcsv($handle, 0, ',', '"')) !== false) {
             if (count($row) < 3) {
@@ -65,13 +70,15 @@ class ImportController extends Controller
                 'ean' => trim($row[2]),
             ];
 
-            if (count($chunk) >= $chunkSize) {
+            if (count($chunk) >= self::CHUNK_SIZE) {
+                $this->keepAlive();
                 $this->processChunk($chunk, $stats);
                 $chunk = [];
             }
         }
 
         if (!empty($chunk)) {
+            $this->keepAlive();
             $this->processChunk($chunk, $stats);
         }
 
@@ -90,6 +97,219 @@ class ImportController extends Controller
         AuditLog::log('import', 'csv', 0, "Importou CSV: {$message}");
 
         return back()->with('success', $message);
+    }
+
+    public function start(Request $request)
+    {
+        set_time_limit(0);
+
+        $filePath = $this->resolveFilePath($request);
+
+        if (!$filePath || !file_exists($filePath)) {
+            return response()->json(['error' => 'Arquivo CSV não encontrado.'], 400);
+        }
+
+        $file = new \SplFileObject($filePath, 'r');
+        $file->seek(PHP_INT_MAX);
+        $totalLines = $file->key();
+        $file = null;
+
+        $total = max(0, $totalLines - 1);
+
+        $this->clearProgress();
+
+        Cache::put($this->cacheKey(), [
+            'file_path' => $filePath,
+            'status' => 'processing',
+            'total' => $total,
+            'processed' => 0,
+            'current_line' => 1,
+            'created_products' => 0,
+            'updated_products' => 0,
+            'created_barcodes' => 0,
+            'skipped_barcodes' => 0,
+            'errors' => 0,
+            'message' => null,
+        ], 3600);
+
+        return response()->json(['total' => $total]);
+    }
+
+    public function chunk()
+    {
+        set_time_limit(0);
+
+        $progress = Cache::get($this->cacheKey());
+
+        if (!$progress) {
+            return response()->json(['error' => 'Importação não iniciada.'], 400);
+        }
+
+        if ($progress['status'] !== 'processing') {
+            return response()->json(['done' => true, 'progress' => $this->buildProgressResponse($progress)]);
+        }
+
+        $handle = fopen($progress['file_path'], 'r');
+
+        for ($i = 0; $i < $progress['current_line']; $i++) {
+            fgets($handle);
+        }
+
+        $rows = [];
+        $lineCount = 0;
+        $startLine = $progress['current_line'];
+
+        while ($lineCount < self::CHUNK_SIZE && ($row = fgetcsv($handle, 0, ',', '"')) !== false) {
+            $rows[] = $row;
+            $lineCount++;
+        }
+
+        $eof = feof($handle);
+        fclose($handle);
+
+        $this->keepAlive();
+
+        $chunkStats = [
+            'created_products' => 0,
+            'updated_products' => 0,
+            'created_barcodes' => 0,
+            'skipped_barcodes' => 0,
+            'errors' => 0,
+        ];
+
+        DB::transaction(function () use ($rows, &$chunkStats) {
+            foreach ($rows as $row) {
+                if (count($row) < 3 || empty(trim($row[0])) || empty(trim($row[2]))) {
+                    $chunkStats['errors']++;
+                    continue;
+                }
+
+                try {
+                    $product = Product::updateOrCreate(
+                        ['code' => trim($row[0])],
+                        ['description' => trim($row[1])]
+                    );
+
+                    if ($product->wasRecentlyCreated) {
+                        $chunkStats['created_products']++;
+                    } elseif ($product->wasChanged()) {
+                        $chunkStats['updated_products']++;
+                    }
+
+                    $barcode = Barcode::firstOrNew(['ean' => trim($row[2])]);
+                    $barcode->product_id = $product->id;
+
+                    if (!$barcode->exists) {
+                        $barcode->save();
+                        $chunkStats['created_barcodes']++;
+                    } else {
+                        if ($barcode->isDirty()) {
+                            $barcode->save();
+                        }
+                        $chunkStats['skipped_barcodes']++;
+                    }
+                } catch (\Exception $e) {
+                    $chunkStats['errors']++;
+                    \Log::warning('Erro ao importar linha', [
+                        'code' => $row[0] ?? '',
+                        'ean' => $row[2] ?? '',
+                        'erro' => $e->getMessage(),
+                    ]);
+                }
+            }
+        });
+
+        $progress['current_line'] = $startLine + count($rows);
+        $progress['processed'] += count($rows);
+        $progress['created_products'] += $chunkStats['created_products'];
+        $progress['updated_products'] += $chunkStats['updated_products'];
+        $progress['created_barcodes'] += $chunkStats['created_barcodes'];
+        $progress['skipped_barcodes'] += $chunkStats['skipped_barcodes'];
+        $progress['errors'] += $chunkStats['errors'];
+
+        $this->keepAlive();
+
+        $done = $progress['processed'] >= $progress['total'] || $eof;
+
+        if ($done) {
+            $progress['status'] = 'complete';
+            $progress['message'] = $this->buildMessage($progress);
+            AuditLog::log('import', 'csv', 0, "Importou CSV: {$progress['message']}");
+        }
+
+        Cache::put($this->cacheKey(), $progress, 3600);
+
+        return response()->json([
+            'done' => $done,
+            'progress' => $this->buildProgressResponse($progress),
+        ]);
+    }
+
+    public function progress()
+    {
+        $progress = Cache::get($this->cacheKey());
+
+        if (!$progress) {
+            return response()->json(['status' => 'idle']);
+        }
+
+        return response()->json($this->buildProgressResponse($progress));
+    }
+
+    private function cacheKey(): string
+    {
+        return self::CACHE_PREFIX . session()->getId();
+    }
+
+    private function clearProgress(): void
+    {
+        Cache::forget($this->cacheKey());
+    }
+
+    private function resolveFilePath(Request $request): ?string
+    {
+        if ($request->hasFile('csv_file')) {
+            $path = $request->file('csv_file')->store('imports');
+            return Storage::path($path);
+        }
+
+        $default = base_path('VALIDADE.csv');
+        return file_exists($default) ? $default : null;
+    }
+
+    private function buildProgressResponse(array $progress): array
+    {
+        $percent = $progress['total'] > 0
+            ? round(($progress['processed'] / $progress['total']) * 100, 1)
+            : 100;
+
+        return [
+            'status' => $progress['status'] ?? 'idle',
+            'total' => $progress['total'] ?? 0,
+            'processed' => $progress['processed'] ?? 0,
+            'percent' => $percent,
+            'message' => $progress['message'] ?? null,
+            'created_products' => $progress['created_products'] ?? 0,
+            'updated_products' => $progress['updated_products'] ?? 0,
+            'created_barcodes' => $progress['created_barcodes'] ?? 0,
+            'skipped_barcodes' => $progress['skipped_barcodes'] ?? 0,
+            'errors' => $progress['errors'] ?? 0,
+        ];
+    }
+
+    private function buildMessage(array $stats): string
+    {
+        $msg = "Importação concluída! "
+            . "Produtos criados: {$stats['created_products']}, "
+            . "Atualizados: {$stats['updated_products']}, "
+            . "Códigos de barras criados: {$stats['created_barcodes']}, "
+            . "Pulados (já existem): {$stats['skipped_barcodes']}";
+
+        if ($stats['errors'] > 0) {
+            $msg .= ", Erros: {$stats['errors']}";
+        }
+
+        return $msg;
     }
 
     private function processChunk(array $chunk, array &$stats): void
@@ -135,5 +355,14 @@ class ImportController extends Controller
                 }
             }
         });
+    }
+
+    private function keepAlive(): void
+    {
+        try {
+            DB::connection()->getPdo()->query('SELECT 1');
+        } catch (\Exception $e) {
+            DB::reconnect();
+        }
     }
 }
