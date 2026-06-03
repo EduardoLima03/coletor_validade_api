@@ -189,30 +189,36 @@
                 Datacheck
             </a>
             <nav class="sidebar-nav">
-                <div class="nav-section">Registros</div>
-                <div class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}"
-                       href="{{ route('admin.products.index') }}">
-                        <i class="bi bi-box"></i> Produtos
-                    </a>
-                </div>
-                <div class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.barcodes.*') ? 'active' : '' }}"
-                       href="{{ route('admin.barcodes.index') }}">
-                        <i class="bi bi-qr-code"></i> Códigos de Barras
-                    </a>
-                </div>
-                <div class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.lojas.*') ? 'active' : '' }}"
-                       href="{{ route('admin.lojas.index') }}">
-                        <i class="bi bi-shop"></i> Lojas
-                    </a>
-                </div>
                 @if (in_array(strtoupper(auth()->user()->position ?? ''), ['ADMIN']))
+                    <div class="nav-section">Registros</div>
+                    <div class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}"
+                           href="{{ route('admin.products.index') }}">
+                            <i class="bi bi-box"></i> Produtos
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('admin.barcodes.*') ? 'active' : '' }}"
+                           href="{{ route('admin.barcodes.index') }}">
+                            <i class="bi bi-qr-code"></i> Códigos de Barras
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('admin.lojas.*') ? 'active' : '' }}"
+                           href="{{ route('admin.lojas.index') }}">
+                            <i class="bi bi-shop"></i> Lojas
+                        </a>
+                    </div>
                     <div class="nav-item">
                         <a class="nav-link {{ request()->routeIs('admin.areas-auditoria.*') ? 'active' : '' }}"
                            href="{{ route('admin.areas-auditoria.index') }}">
                             <i class="bi bi-clipboard-check"></i> Áreas de Auditoria
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('admin.import.*') ? 'active' : '' }}"
+                           href="{{ route('admin.import.form') }}">
+                            <i class="bi bi-upload"></i> Importar
                         </a>
                     </div>
                 @endif
@@ -229,13 +235,7 @@
                         <i class="bi bi-clipboard-data"></i> Coletas
                     </a>
                 </div>
-                <div class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('admin.import.*') ? 'active' : '' }}"
-                       href="{{ route('admin.import.form') }}">
-                        <i class="bi bi-upload"></i> Importar
-                    </a>
-                </div>
-    @if (in_array(strtoupper(auth()->user()->position ?? ''), ['ADMIN']))
+                @if (in_array(strtoupper(auth()->user()->position ?? ''), ['ADMIN']))
         <div class="nav-section">Administração</div>
         <div class="nav-item">
             <a class="nav-link {{ request()->routeIs('admin.importar.coletas.*') ? 'active' : '' }}"

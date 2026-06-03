@@ -1,22 +1,35 @@
 #!/bin/bash
 set -e
 
-chown -R www-data:www-data storage bootstrap/cache public
+chown -R www-data:www-data storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 
 if [ ! -f .env ]; then
-    cp .env.docker .env
+    cp .env.production .env
+fi
+
+if ! grep -q "^APP_KEY=base64:" .env; then
     php artisan key:generate --force
 fi
 
 echo "Waiting for MySQL..."
-until php -r "new PDO('mysql:host=${DB_HOST:-db};port=${DB_PORT:-3306}', '${DB_USERNAME:-root}', '${DB_PASSWORD:-laravel}');" 2>/dev/null; do
+
+until mysqladmin ping \
+    -h"${DB_HOST}" \
+    -u"${DB_USERNAME}" \
+    -p"${DB_PASSWORD}" \
+    --silent \
+    --skip-ssl
+do
     sleep 2
 done
+
 echo "MySQL ready."
 
-php artisan optimize:clear 2>/dev/null || true
-php artisan migrate --force
-php artisan db:seed --force
+php artisan optimize:clear || true
+
+php artisan migrate --force || true
+
+php artisan db:seed --force || true
 
 exec apache2-foreground

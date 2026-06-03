@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AreaAuditoria;
 use App\Models\Coleta;
 use App\Models\Loja;
+use App\Models\User;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -15,7 +16,7 @@ class ColetaController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Coleta::with("loja", "areaAuditoria");
+        $query = Coleta::with("loja", "areaAuditoria", "user");
 
         if ($request->filled("loja_id")) {
             $query->where("loja_id", $request->loja_id);
@@ -34,10 +35,28 @@ class ColetaController extends Controller
             $query->whereDate("data_validade", "<=", $request->data_fim);
         }
 
-        $coletas = $query->orderBy("data_validade")->paginate(50)->appends(request()->query());
-        $lojas = Loja::orderBy("nome")->get();
+        if ($request->filled("user_id")) {
+            $query->where("user_id", $request->user_id);
+        }
 
-        return view("admin.coletas.index", compact("coletas", "lojas"));
+        if ($request->filled("ean")) {
+            $query->where("ean", "like", "%{$request->ean}%");
+        }
+
+        if ($request->filled("descricao")) {
+            $query->where("descricao", "like", "%{$request->descricao}%");
+        }
+
+        if ($request->filled("area_auditoria_id")) {
+            $query->where("area_auditoria_id", $request->area_auditoria_id);
+        }
+
+        $coletas = $query->orderBy("id")->paginate(50)->appends(request()->query());
+        $lojas = Loja::orderBy("nome")->get();
+        $auditores = User::orderBy("name")->get();
+        $areas = AreaAuditoria::orderBy("nome")->get();
+
+        return view("admin.coletas.index", compact("coletas", "lojas", "auditores", "areas"));
     }
 
     public function exportXlsx(Request $request)

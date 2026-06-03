@@ -28,32 +28,6 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
     Route::put('/perfil', [App\Http\Controllers\Web\ProfileController::class, 'update'])
         ->name('profile.update');
 
-    Route::resource('produtos', App\Http\Controllers\Web\ProductController::class)
-        ->names(['index' => 'products.index', 'create' => 'products.create', 'store' => 'products.store',
-                 'show' => 'products.show', 'edit' => 'products.edit', 'update' => 'products.update',
-                 'destroy' => 'products.destroy']);
-
-    Route::resource('barcodes', App\Http\Controllers\Web\BarcodeController::class)
-        ->names(['index' => 'barcodes.index', 'create' => 'barcodes.create', 'store' => 'barcodes.store',
-                 'show' => 'barcodes.show', 'edit' => 'barcodes.edit', 'update' => 'barcodes.update',
-                 'destroy' => 'barcodes.destroy']);
-
-    Route::get('/importar', [App\Http\Controllers\Web\ImportController::class, 'showForm'])
-        ->name('import.form');
-    Route::post('/importar/processar', [App\Http\Controllers\Web\ImportController::class, 'processFile'])
-        ->name('import.process');
-    Route::post('/importar/iniciar', [App\Http\Controllers\Web\ImportController::class, 'start'])
-        ->name('import.start');
-    Route::post('/importar/processar-lote', [App\Http\Controllers\Web\ImportController::class, 'chunk'])
-        ->name('import.chunk');
-    Route::get('/importar/progresso', [App\Http\Controllers\Web\ImportController::class, 'progress'])
-        ->name('import.progress');
-
-    Route::resource('lojas', App\Http\Controllers\Web\LojaController::class)
-        ->names(['index' => 'lojas.index', 'create' => 'lojas.create', 'store' => 'lojas.store',
-                 'edit' => 'lojas.edit', 'update' => 'lojas.update',
-                 'destroy' => 'lojas.destroy']);
-
     Route::get('/coletas', [App\Http\Controllers\Web\ColetaController::class, 'index'])
         ->name('coletas.index');
     Route::get('/coletas/exportar/xlsx', [App\Http\Controllers\Web\ColetaController::class, 'exportXlsx'])
@@ -68,6 +42,32 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
         ->name('coletas.destroy');
 
     Route::middleware('role:ADMIN')->group(function () {
+        Route::resource('produtos', App\Http\Controllers\Web\ProductController::class)
+            ->names(['index' => 'products.index', 'create' => 'products.create', 'store' => 'products.store',
+                     'show' => 'products.show', 'edit' => 'products.edit', 'update' => 'products.update',
+                     'destroy' => 'products.destroy']);
+
+        Route::resource('barcodes', App\Http\Controllers\Web\BarcodeController::class)
+            ->names(['index' => 'barcodes.index', 'create' => 'barcodes.create', 'store' => 'barcodes.store',
+                     'show' => 'barcodes.show', 'edit' => 'barcodes.edit', 'update' => 'barcodes.update',
+                     'destroy' => 'barcodes.destroy']);
+
+        Route::get('/importar', [App\Http\Controllers\Web\ImportController::class, 'showForm'])
+            ->name('import.form');
+        Route::post('/importar/processar', [App\Http\Controllers\Web\ImportController::class, 'processFile'])
+            ->name('import.process');
+        Route::post('/importar/iniciar', [App\Http\Controllers\Web\ImportController::class, 'start'])
+            ->name('import.start');
+        Route::post('/importar/processar-lote', [App\Http\Controllers\Web\ImportController::class, 'chunk'])
+            ->name('import.chunk');
+        Route::get('/importar/progresso', [App\Http\Controllers\Web\ImportController::class, 'progress'])
+            ->name('import.progress');
+
+        Route::resource('lojas', App\Http\Controllers\Web\LojaController::class)
+            ->names(['index' => 'lojas.index', 'create' => 'lojas.create', 'store' => 'lojas.store',
+                     'edit' => 'lojas.edit', 'update' => 'lojas.update',
+                     'destroy' => 'lojas.destroy']);
+
         Route::resource('users', App\Http\Controllers\Web\UserController::class)
             ->names(['index' => 'users.index', 'create' => 'users.create', 'store' => 'users.store',
                      'show' => 'users.show', 'edit' => 'users.edit', 'update' => 'users.update',

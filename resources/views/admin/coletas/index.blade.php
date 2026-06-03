@@ -30,6 +30,36 @@
                 </select>
             </div>
             <div class="col-md-2">
+                <label class="form-label">Auditor</label>
+                <select name="user_id" class="form-select">
+                    <option value="">Todos</option>
+                    @foreach ($auditores as $user)
+                        <option value="{{ $user->id }}" {{ request("user_id") == $user->id ? "selected" : "" }}>
+                            {{ $user->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Setor</label>
+                <select name="area_auditoria_id" class="form-select">
+                    <option value="">Todos</option>
+                    @foreach ($areas as $area)
+                        <option value="{{ $area->id }}" {{ request("area_auditoria_id") == $area->id ? "selected" : "" }}>
+                            {{ $area->nome }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">EAN</label>
+                <input type="text" name="ean" class="form-control" placeholder="Buscar EAN" value="{{ request("ean") }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Descricao</label>
+                <input type="text" name="descricao" class="form-control" placeholder="Buscar descricao" value="{{ request("descricao") }}">
+            </div>
+            <div class="col-md-2">
                 <label class="form-label">Dias a vencer</label>
                 <select name="dias" class="form-select">
                     <option value="">Todos</option>
@@ -48,7 +78,7 @@
                 <label class="form-label">Data fim</label>
                 <input type="date" name="data_fim" class="form-control" value="{{ request("data_fim") }}">
             </div>
-            <div class="col-md-3 d-flex align-items-end gap-1">
+            <div class="col-md-2 d-flex align-items-end gap-1">
                 <button type="submit" class="btn btn-dc-primary flex-grow-1">
                     <i class="bi bi-funnel"></i> Filtrar
                 </button>

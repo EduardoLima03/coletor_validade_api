@@ -1,7 +1,5 @@
 FROM php:8.2-apache
 
-LABEL maintainer="CL Dev"
-
 RUN a2enmod rewrite headers
 
 RUN apt-get update && apt-get install -y \
@@ -13,11 +11,13 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libcurl4-openssl-dev \
     libicu-dev \
+    default-mysql-client \
     git \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg
+
 RUN docker-php-ext-install -j$(nproc) \
     pdo_mysql \
     mbstring \
@@ -31,21 +31,23 @@ RUN docker-php-ext-install -j$(nproc) \
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+COPY .docker/apache/vhost.conf /etc/apache2/sites-available/000-default.conf
+COPY .docker/php/php.ini /usr/local/etc/php/conf.d/datacheck.ini
+COPY .docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
 WORKDIR /var/www/html
 
 COPY . .
-COPY .docker/apache/vhost.conf /etc/apache2/sites-available/000-default.conf
-COPY .docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
-COPY .docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-RUN composer install --no-interaction
+RUN composer install \
+    --no-dev \
+    --optimize-autoloader \
+    --no-interaction
 
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-RUN chown -R www-data:www-data storage bootstrap/cache public && \
-    chmod -R 775 storage bootstrap/cache
+RUN chown -R www-data:www-data storage bootstrap/cache && \
+    chmod -R 775 storage bootstrap/cache && \
+    chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 80
 
 ENTRYPOINT ["docker-entrypoint.sh"]
-

@@ -1,28 +1,24 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-
+    build: .
+    image: datacheck:1.0
     container_name: datacheck-app
-
+    restart: unless-stopped
     ports:
       - "9001:80"
-
     environment:
-      - APP_ENV=production
-      - APP_DEBUG=false
-      - DB_CONNECTION=mysql
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_DATABASE=laravel
-      - DB_USERNAME=root
-      - DB_PASSWORD=laravel
-
+      APP_ENV: production
+      APP_DEBUG: false
+      APP_URL: http://localhost:9001
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: datacheck
+      DB_USERNAME: datacheck
+      DB_PASSWORD: senha_forte
     depends_on:
       db:
         condition: service_healthy
-
     networks:
       - datacheck-net
 
@@ -30,15 +26,15 @@ services:
     image: mysql:8.0
     container_name: datacheck-db
     restart: unless-stopped
-    ports:
-      - "3307:3306"
     environment:
-      MYSQL_DATABASE: laravel
-      MYSQL_ROOT_PASSWORD: laravel
+      MYSQL_DATABASE: datacheck
+      MYSQL_USER: datacheck
+      MYSQL_PASSWORD: senha_forte
+      MYSQL_ROOT_PASSWORD: senha_root_forte
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-plaravel"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-udatacheck", "-psenha_forte"]
       interval: 10s
       timeout: 5s
       retries: 5
