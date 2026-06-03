@@ -11,13 +11,15 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class ColetasExport implements FromQuery, WithHeadings, WithMapping, WithStyles
 {
+    protected $user;
     protected $lojaId;
     protected $dias;
     protected $dataInicio;
     protected $dataFim;
 
-    public function __construct($lojaId = null, $dias = null, $dataInicio = null, $dataFim = null)
+    public function __construct($lojaId = null, $dias = null, $dataInicio = null, $dataFim = null, $user = null)
     {
+        $this->user = $user;
         $this->lojaId = $lojaId;
         $this->dias = $dias;
         $this->dataInicio = $dataInicio;
@@ -28,12 +30,20 @@ class ColetasExport implements FromQuery, WithHeadings, WithMapping, WithStyles
     {
         $query = Coleta::with("loja", "user", "areaAuditoria");
 
+        if ($this->user && $this->user->position !== 'ADMIN') {
+            $lojaIds = $this->user->lojasAcessoIds();
+            if (!empty($lojaIds)) {
+                $query->whereIn("loja_id", $lojaIds);
+            }
+        }
+
         if ($this->lojaId) {
             $query->where("loja_id", $this->lojaId);
         }
 
         if ($this->dias) {
-            $query->whereDate("data_validade", "<=", now()->addDays((int) $this->dias));
+            $dias = (int) $this->dias;
+            $query->whereBetween("data_validade", [now()->addDay(), now()->addDays($dias)]);
         }
 
         if ($this->dataInicio) {

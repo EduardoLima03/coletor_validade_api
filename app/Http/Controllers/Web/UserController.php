@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\Loja;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -31,7 +32,8 @@ class UserController extends Controller
 
     public function create()
     {
-        return view('admin.users.create');
+        $lojas = Loja::orderBy('nome')->get();
+        return view('admin.users.create', compact('lojas'));
     }
 
     public function store(Request $request)
@@ -41,11 +43,21 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'position' => 'required|string|in:ADMIN,GERENCIA,COLETOR',
             'password' => 'required|string|min:6|confirmed',
+            'coleta_edit' => 'nullable|boolean',
+            'coleta_delete' => 'nullable|boolean',
+            'lojas' => 'nullable|array',
+            'lojas.*' => 'exists:lojas,id',
         ]);
 
         $data['password'] = Hash::make($data['password']);
+        $data['coleta_edit'] = $request->boolean('coleta_edit');
+        $data['coleta_delete'] = $request->boolean('coleta_delete');
 
         $user = User::create($data);
+
+        if ($request->filled('lojas')) {
+            $user->lojas()->sync($request->lojas);
+        }
 
         AuditLog::log('create', 'user', $user->id, "Criou usuário {$user->name} ({$user->email}) como {$user->position}");
 
@@ -55,14 +67,15 @@ class UserController extends Controller
 
     public function show($id)
     {
-        $user = User::findOrFail($id);
+        $user = User::with('lojas')->findOrFail($id);
         return view('admin.users.show', compact('user'));
     }
 
     public function edit($id)
     {
-        $user = User::findOrFail($id);
-        return view('admin.users.edit', compact('user'));
+        $user = User::with('lojas')->findOrFail($id);
+        $lojas = Loja::orderBy('nome')->get();
+        return view('admin.users.edit', compact('user', 'lojas'));
     }
 
     public function update(Request $request, $id)
@@ -74,6 +87,10 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email,' . $user->id,
             'position' => 'required|string|in:ADMIN,GERENCIA,COLETOR',
             'password' => 'nullable|string|min:6|confirmed',
+            'coleta_edit' => 'nullable|boolean',
+            'coleta_delete' => 'nullable|boolean',
+            'lojas' => 'nullable|array',
+            'lojas.*' => 'exists:lojas,id',
         ]);
 
         if ($data['password'] ?? false) {
@@ -82,7 +99,14 @@ class UserController extends Controller
             unset($data['password']);
         }
 
+        $data['coleta_edit'] = $request->boolean('coleta_edit');
+        $data['coleta_delete'] = $request->boolean('coleta_delete');
+
         $user->update($data);
+
+        if ($request->has('lojas')) {
+            $user->lojas()->sync($request->lojas ?? []);
+        }
 
         AuditLog::log('update', 'user', $user->id, "Atualizou usuário {$user->name} ({$user->email})");
 

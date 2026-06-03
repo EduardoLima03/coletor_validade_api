@@ -63,7 +63,7 @@
                 <label class="form-label">Dias a vencer</label>
                 <select name="dias" class="form-select">
                     <option value="">Todos</option>
-                    @foreach ([5, 7, 12, 15, 20] as $d)
+                    @foreach ([5, 7, 12, 15, 20, 30, 60] as $d)
                         <option value="{{ $d }}" {{ request("dias") == $d ? "selected" : "" }}>
                             Ate {{ $d }} dias
                         </option>
@@ -106,7 +106,9 @@
                         <th>Validade</th>
                         <th>Dias</th>
                         <th>Data/Hora</th>
-                        <th class="text-center" width="140">Acoes</th>
+                        @if ($podeEditar || $podeExcluir)
+                            <th class="text-center" width="140">Acoes</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody>
@@ -133,11 +135,15 @@
                                 @endif
                             </td>
                             <td>{{ $coleta->datahora->format("d/m/Y H:i") }}</td>
+                            @if ($podeEditar || $podeExcluir)
                             <td class="text-center">
+                                @if ($podeEditar)
                                 <a href="{{ route("admin.coletas.edit", $coleta->id) }}"
                                    class="btn btn-sm btn-outline-primary" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                @endif
+                                @if ($podeExcluir)
                                 <form action="{{ route("admin.coletas.destroy", $coleta->id) }}"
                                       method="POST"
                                       class="d-inline"
@@ -148,11 +154,13 @@
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
+                                @endif
                             </td>
+                            @endif
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="11" class="text-center text-muted py-4">
+                            <td colspan="{{ ($podeEditar || $podeExcluir) ? 11 : 10 }}" class="text-center text-muted py-4">
                                 <i class="bi bi-inbox"></i> Nenhuma coleta encontrada.
                             </td>
                         </tr>

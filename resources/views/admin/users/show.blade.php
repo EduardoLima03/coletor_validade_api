@@ -36,6 +36,38 @@
                 <td>{{ $user->position ?? '-' }}</td>
             </tr>
             <tr>
+                <th class="text-muted">Editar Coletas</th>
+                <td>
+                    @if ($user->coleta_edit)
+                        <span class="badge bg-success">Sim</span>
+                    @else
+                        <span class="badge bg-danger">Não</span>
+                    @endif
+                </td>
+            </tr>
+            <tr>
+                <th class="text-muted">Excluir Coletas</th>
+                <td>
+                    @if ($user->coleta_delete)
+                        <span class="badge bg-success">Sim</span>
+                    @else
+                        <span class="badge bg-danger">Não</span>
+                    @endif
+                </td>
+            </tr>
+            <tr>
+                <th class="text-muted">Lojas com Acesso</th>
+                <td>
+                    @if ($user->lojas->isNotEmpty())
+                        @foreach ($user->lojas as $loja)
+                            <span class="badge bg-secondary">{{ $loja->nome }}</span>
+                        @endforeach
+                    @else
+                        <span class="text-muted">Todas as lojas</span>
+                    @endif
+                </td>
+            </tr>
+            <tr>
                 <th class="text-muted">Criado em</th>
                 <td>{{ $user->created_at ? $user->created_at->format('d/m/Y H:i:s') : '-' }}</td>
             </tr>

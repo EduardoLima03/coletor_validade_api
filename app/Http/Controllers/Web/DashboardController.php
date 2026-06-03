@@ -16,6 +16,14 @@ class DashboardController extends Controller
     {
         $query = Coleta::query();
 
+        $user = auth()->user();
+        if ($user->position !== 'ADMIN') {
+            $lojaIds = $user->lojasAcessoIds();
+            if (!empty($lojaIds)) {
+                $query->whereIn("loja_id", $lojaIds);
+            }
+        }
+
         if ($request->filled("loja_id")) {
             $query->where("loja_id", $request->loja_id);
         }
@@ -30,7 +38,7 @@ class DashboardController extends Controller
 
         if ($request->filled("dias")) {
             $dias = (int) $request->dias;
-            $query->whereDate("data_validade", "<=", now()->addDays($dias));
+            $query->whereBetween("data_validade", [now()->addDay(), now()->addDays($dias)]);
         }
 
         if ($request->filled("data_inicio")) {
@@ -68,7 +76,7 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        $lojas = Loja::orderBy("nome")->get();
+        $lojas = $user->lojasAcesso();
         $auditores = User::orderBy("name")->get();
         $areas = AreaAuditoria::orderBy("nome")->get();
 

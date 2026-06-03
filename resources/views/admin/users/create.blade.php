@@ -81,6 +81,62 @@
                 </div>
             </div>
 
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input type="checkbox"
+                               class="form-check-input"
+                               id="coleta_edit"
+                               name="coleta_edit"
+                               value="1"
+                               {{ old('coleta_edit', true) ? 'checked' : '' }}>
+                        <label class="form-check-label" for="coleta_edit">
+                            Pode editar coletas
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input type="checkbox"
+                               class="form-check-input"
+                               id="coleta_delete"
+                               name="coleta_delete"
+                               value="1"
+                               {{ old('coleta_delete', true) ? 'checked' : '' }}>
+                        <label class="form-check-label" for="coleta_delete">
+                            Pode excluir coletas
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            @if ($lojas->isNotEmpty())
+            <div class="mb-3">
+                <label class="form-label">Lojas com acesso</label>
+                <p class="text-muted small">Se nenhuma loja for selecionada, o usuário terá acesso a todas as lojas.</p>
+                <div class="row" style="max-height: 200px; overflow-y: auto;">
+                    @foreach ($lojas as $loja)
+                    <div class="col-md-4 col-lg-3 mb-1">
+                        <div class="form-check">
+                            <input type="checkbox"
+                                   class="form-check-input"
+                                   id="loja_{{ $loja->id }}"
+                                   name="lojas[]"
+                                   value="{{ $loja->id }}"
+                                   {{ in_array($loja->id, old('lojas', [])) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="loja_{{ $loja->id }}">
+                                {{ $loja->nome }}
+                            </label>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                @error('lojas')
+                    <div class="text-danger small mt-1">{{ $message }}</div>
+                @enderror
+            </div>
+            @endif
+
             <button type="submit" class="btn btn-success">
                 <i class="bi bi-check-lg"></i> Salvar
             </button>

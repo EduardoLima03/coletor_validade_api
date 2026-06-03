@@ -12,4 +12,9 @@ class Loja extends Model
     {
         return $this->hasMany(Coleta::class);
     }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'loja_user');
+    }
 }
