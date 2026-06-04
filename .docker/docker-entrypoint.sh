@@ -26,6 +26,8 @@ done
 
 echo "MySQL ready."
 
+php artisan storage:link --force || true
+
 php artisan optimize:clear || true
 
 php artisan migrate --force || true
