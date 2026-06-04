@@ -16,6 +16,7 @@ services:
       DB_DATABASE: datacheck
       DB_USERNAME: datacheck
       DB_PASSWORD: senha_forte
+      LICENSE_API_URL: http://licenciamento-app/api
     depends_on:
       db:
         condition: service_healthy

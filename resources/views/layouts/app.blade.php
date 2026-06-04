@@ -307,6 +307,33 @@
             </div>
 
             <div class="content-area">
+                @php
+                    $licenseInfo = app(\App\Services\LicenseService::class)->validate();
+                    $licenseWarning = null;
+                    if ($licenseInfo) {
+                        if ($licenseInfo['expired']) {
+                            $licenseWarning = ['type' => 'danger', 'text' => 'Sua licença expirou em ' . $licenseInfo['expires_at']->format('d/m/Y') . '. Renove para continuar usando o sistema.'];
+                        } elseif ($licenseInfo['days_remaining'] > 0 && $licenseInfo['days_remaining'] <= 15) {
+                            $licenseWarning = ['type' => 'warning', 'text' => 'Sua licença expira em ' . $licenseInfo['days_remaining'] . ' dia(s). Renove para evitar interrupção.'];
+                        }
+                        if (!$licenseWarning && $licenseInfo['max_users'] > 0) {
+                            $pct = round(($licenseInfo['user_count'] / $licenseInfo['max_users']) * 100);
+                            if ($pct >= 100) {
+                                $licenseWarning = ['type' => 'danger', 'text' => 'Limite de usuários atingido (' . $licenseInfo['max_users'] . '). Adquira um pacote com mais usuários.'];
+                            } elseif ($pct >= 80) {
+                                $licenseWarning = ['type' => 'warning', 'text' => 'Você usou ' . $pct . '% dos usuários disponíveis (' . $licenseInfo['user_count'] . '/' . $licenseInfo['max_users'] . ').'];
+                            }
+                        }
+                    }
+                @endphp
+
+                @if ($licenseWarning)
+                    <div class="alert alert-{{ $licenseWarning['type'] }} alert-dismissible fade show py-2" role="alert">
+                        <i class="bi bi-exclamation-triangle"></i> {!! $licenseWarning['text'] !!}
+                        <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+                    </div>
+                @endif
+
                 @if (session('success'))
                     <div class="alert alert-success alert-dismissible fade show py-2" role="alert"
                          style="background-color: #e8f5e9; border-color: #005922; color: #003d17;">

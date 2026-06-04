@@ -4,18 +4,22 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Services\LicenseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class SettingController extends Controller
 {
-    public function index()
+    public function index(LicenseService $licenseService)
     {
         $setting = Setting::firstOrCreate([], [
             'company_name' => 'Medeiros',
         ]);
 
-        return view('admin.settings.index', compact('setting'));
+        $licenseInfo = $licenseService->validate();
+        $licenseError = session('license_error');
+
+        return view('admin.settings.index', compact('setting', 'licenseInfo', 'licenseError'));
     }
 
     public function update(Request $request)
@@ -23,6 +27,7 @@ class SettingController extends Controller
         $request->validate([
             'company_name' => 'required|string|max:100',
             'company_icon' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
+            'license_key' => 'nullable|string|max:50',
         ]);
 
         $setting = Setting::firstOrCreate([], [
@@ -45,7 +50,15 @@ class SettingController extends Controller
             $setting->company_icon = $path;
         }
 
+        if ($request->filled('license_key')) {
+            $setting->license_key = $request->license_key;
+        }
+
         $setting->save();
+
+        if ($request->filled('license_key')) {
+            app(LicenseService::class)->refresh();
+        }
 
         return redirect()->route('admin.settings.index')
             ->with('success', 'Configurações atualizadas com sucesso.');

@@ -125,6 +125,8 @@ return [
 
     'cipher' => 'AES-256-CBC',
 
+    'license_api_url' => env('LICENSE_API_URL', 'https://licenciamento.seusite.com/api'),
+
     /*
     |--------------------------------------------------------------------------
     | Maintenance Mode Driver
