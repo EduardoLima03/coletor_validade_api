@@ -23,8 +23,21 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
+
+            $role = strtoupper(auth()->user()->position ?? '');
+
             AuditLog::log('login', 'auth', auth()->id(), "Usuário {$request->email} fez login");
-            return redirect()->intended('/admin/produtos');
+
+            if (!in_array($role, ['ADMIN', 'GERENCIA'])) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                return back()->withErrors([
+                    'email' => 'Acesso web não autorizado para este perfil.',
+                ])->onlyInput('email');
+            }
+
+            return redirect()->intended('/admin/dashboard');
         }
 
         return back()->withErrors([

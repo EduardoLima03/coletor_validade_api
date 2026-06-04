@@ -14,9 +14,27 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ColetaController extends Controller
 {
+    protected function lojaFilter($query)
+    {
+        $user = auth()->user();
+        if ($user->position !== 'ADMIN') {
+            $lojaIds = $user->lojasAcessoIds();
+            if (!empty($lojaIds)) {
+                $query->whereIn("loja_id", $lojaIds);
+            }
+        }
+        return $query;
+    }
+
+    protected function lojasDisponiveis()
+    {
+        return auth()->user()->lojasAcesso();
+    }
+
     public function index(Request $request)
     {
         $query = Coleta::with("loja", "areaAuditoria", "user");
+        $query = $this->lojaFilter($query);
 
         if ($request->filled("loja_id")) {
             $query->where("loja_id", $request->loja_id);
@@ -24,7 +42,7 @@ class ColetaController extends Controller
 
         if ($request->filled("dias")) {
             $dias = (int) $request->dias;
-            $query->whereDate("data_validade", "<=", now()->addDays($dias));
+            $query->whereBetween("data_validade", [now()->addDay(), now()->addDays($dias)]);
         }
 
         if ($request->filled("data_inicio")) {
@@ -52,11 +70,17 @@ class ColetaController extends Controller
         }
 
         $coletas = $query->orderBy("id")->paginate(50)->appends(request()->query());
-        $lojas = Loja::orderBy("nome")->get();
+        $lojas = $this->lojasDisponiveis();
         $auditores = User::orderBy("name")->get();
         $areas = AreaAuditoria::orderBy("nome")->get();
 
-        return view("admin.coletas.index", compact("coletas", "lojas", "auditores", "areas"));
+        $user = auth()->user();
+        $podeEditar = $user->podeEditarColeta();
+        $podeExcluir = $user->podeExcluirColeta();
+
+        return view("admin.coletas.index", compact(
+            "coletas", "lojas", "auditores", "areas", "podeEditar", "podeExcluir"
+        ));
     }
 
     public function exportXlsx(Request $request)
@@ -66,7 +90,8 @@ class ColetaController extends Controller
                 $request->loja_id,
                 $request->dias,
                 $request->data_inicio,
-                $request->data_fim
+                $request->data_fim,
+                auth()->user()
             ),
             "coletas.xlsx"
         );
@@ -79,7 +104,8 @@ class ColetaController extends Controller
                 $request->loja_id,
                 $request->dias,
                 $request->data_inicio,
-                $request->data_fim
+                $request->data_fim,
+                auth()->user()
             ),
             "coletas.csv"
         );
@@ -87,8 +113,19 @@ class ColetaController extends Controller
 
     public function edit(Coleta $coleta)
     {
+        $user = auth()->user();
+
+        if (!$user->podeEditarColeta()) {
+            abort(403, 'Você não tem permissão para editar coletas.');
+        }
+
+        $lojaIds = $user->lojasAcessoIds();
+        if (!empty($lojaIds) && !in_array($coleta->loja_id, $lojaIds)) {
+            abort(403, 'Você não tem acesso a esta loja.');
+        }
+
         $coleta->load("loja", "areaAuditoria");
-        $lojas = Loja::orderBy("nome")->get();
+        $lojas = $this->lojasDisponiveis();
         $areasAuditoria = AreaAuditoria::where("loja_id", $coleta->loja_id)
             ->orderBy("nome")
             ->get();
@@ -97,6 +134,17 @@ class ColetaController extends Controller
 
     public function update(Request $request, Coleta $coleta)
     {
+        $user = auth()->user();
+
+        if (!$user->podeEditarColeta()) {
+            abort(403, 'Você não tem permissão para editar coletas.');
+        }
+
+        $lojaIds = $user->lojasAcessoIds();
+        if (!empty($lojaIds) && !in_array($coleta->loja_id, $lojaIds)) {
+            abort(403, 'Você não tem acesso a esta loja.');
+        }
+
         $validated = $request->validate([
             "area_auditoria_id" => "nullable|exists:areas_auditoria,id",
             "quantidade" => "required|integer|min:1",
@@ -112,6 +160,17 @@ class ColetaController extends Controller
 
     public function destroy(Coleta $coleta)
     {
+        $user = auth()->user();
+
+        if (!$user->podeExcluirColeta()) {
+            abort(403, 'Você não tem permissão para excluir coletas.');
+        }
+
+        $lojaIds = $user->lojasAcessoIds();
+        if (!empty($lojaIds) && !in_array($coleta->loja_id, $lojaIds)) {
+            abort(403, 'Você não tem acesso a esta loja.');
+        }
+
         $id = $coleta->id;
         $coleta->delete();
 

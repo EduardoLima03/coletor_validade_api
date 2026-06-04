@@ -43,7 +43,7 @@
                 <label class="form-label">Dias a vencer</label>
                 <select name="dias" class="form-select">
                     <option value="">Todos</option>
-                    @foreach ([5, 7, 12, 15, 20] as $d)
+                    @foreach ([5, 7, 12, 15, 20, 30, 60] as $d)
                         <option value="{{ $d }}" {{ request("dias") == $d ? "selected" : "" }}>
                             Ate {{ $d }} dias
                         </option>
