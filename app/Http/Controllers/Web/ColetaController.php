@@ -69,6 +69,14 @@ class ColetaController extends Controller
             $query->where("area_auditoria_id", $request->area_auditoria_id);
         }
 
+        if ($request->filled("data_coleta_inicio")) {
+            $query->whereDate("datahora", ">=", $request->data_coleta_inicio);
+        }
+
+        if ($request->filled("data_coleta_fim")) {
+            $query->whereDate("datahora", "<=", $request->data_coleta_fim);
+        }
+
         $coletas = $query->orderBy("id")->paginate(50)->appends(request()->query());
         $lojas = $this->lojasDisponiveis();
         $auditores = User::orderBy("name")->get();

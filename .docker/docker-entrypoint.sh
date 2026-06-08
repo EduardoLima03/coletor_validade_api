@@ -4,11 +4,24 @@ set -e
 chown -R www-data:www-data storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 
-if [ ! -f .env ]; then
-    cp .env.production .env
+ENV_FILE=".env"
+if [ -n "$APP_ENV" ]; then
+    ENV_FILE=".env.${APP_ENV}"
 fi
 
-if ! grep -q "^APP_KEY=base64:" .env; then
+if [ ! -f "$ENV_FILE" ]; then
+    if [ -f ".env.production" ]; then
+        cp .env.production "$ENV_FILE"
+    else
+        cp .env.example "$ENV_FILE"
+    fi
+fi
+
+if ! grep -q "^APP_KEY=base64:" "$ENV_FILE" 2>/dev/null && ! grep -q "^APP_KEY=" "$ENV_FILE" 2>/dev/null; then
+    echo "APP_KEY=" >> "$ENV_FILE"
+fi
+
+if ! grep -q "^APP_KEY=base64:" "$ENV_FILE"; then
     php artisan key:generate --force
 fi
 

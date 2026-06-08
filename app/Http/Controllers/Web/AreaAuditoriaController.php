@@ -11,10 +11,18 @@ use Illuminate\Validation\Rule;
 
 class AreaAuditoriaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $areas = AreaAuditoria::with('loja')->orderBy('loja_id')->orderBy('nome')->paginate(20);
-        return view('admin.areas-auditoria.index', compact('areas'));
+        $query = AreaAuditoria::with('loja');
+
+        if ($request->filled('loja_id')) {
+            $query->where('loja_id', $request->loja_id);
+        }
+
+        $areas = $query->orderBy('loja_id')->orderBy('nome')->paginate(20);
+        $lojas = Loja::orderBy('nome')->get();
+
+        return view('admin.areas-auditoria.index', compact('areas', 'lojas'));
     }
 
     public function create()
@@ -81,6 +89,7 @@ class AreaAuditoriaController extends Controller
     public function destroy(AreaAuditoria $areaAuditorium)
     {
         $nome = $areaAuditorium->nome;
+
         $areaAuditorium->delete();
 
         AuditLog::log('delete', 'area_auditoria', $areaAuditorium->id, "Excluiu área de auditoria: {$nome}");

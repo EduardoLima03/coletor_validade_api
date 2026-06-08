@@ -1,11 +1,13 @@
 services:
   app:
+    build: .
     image: datacheck:1.0
     container_name: datacheck-app
     restart: unless-stopped
     ports:
       - "9001:80"
     environment:
+      TZ: America/Fortaleza
       APP_ENV: production
       APP_DEBUG: false
       APP_URL: http://localhost:9001
@@ -15,6 +17,8 @@ services:
       DB_DATABASE: datacheck
       DB_USERNAME: datacheck
       DB_PASSWORD: senha_forte
+    volumes:
+      - ./:/var/www/html
     depends_on:
       db:
         condition: service_healthy
@@ -26,6 +30,7 @@ services:
     container_name: datacheck-db
     restart: unless-stopped
     environment:
+      TZ: America/Fortaleza
       MYSQL_DATABASE: datacheck
       MYSQL_USER: datacheck
       MYSQL_PASSWORD: senha_forte

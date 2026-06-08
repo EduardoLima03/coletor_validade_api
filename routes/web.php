@@ -78,9 +78,12 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
                      'destroy' => 'users.destroy']);
 
         Route::resource('areas-auditoria', App\Http\Controllers\Web\AreaAuditoriaController::class)
+            ->parameters(['areas-auditoria' => 'area_auditorium'])
             ->names(['index' => 'areas-auditoria.index', 'create' => 'areas-auditoria.create',
                      'store' => 'areas-auditoria.store', 'edit' => 'areas-auditoria.edit',
                      'update' => 'areas-auditoria.update', 'destroy' => 'areas-auditoria.destroy']);
+        Route::post('areas-auditoria/{area_auditorium}/excluir', [App\Http\Controllers\Web\AreaAuditoriaController::class, 'destroy'])
+            ->name('areas-auditoria.excluir');
 
         Route::get('/importar/coletas', [App\Http\Controllers\Web\ColetaImportController::class, 'showForm'])
             ->name('importar.coletas.form');

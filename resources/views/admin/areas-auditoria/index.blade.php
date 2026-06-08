@@ -10,6 +10,29 @@
     </a>
 </div>
 
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="GET" action="{{ route("admin.areas-auditoria.index") }}" class="row g-2">
+            <div class="col-md-4">
+                <label class="form-label">Loja</label>
+                <select name="loja_id" class="form-select">
+                    <option value="">Todas</option>
+                    @foreach ($lojas as $loja)
+                        <option value="{{ $loja->id }}" {{ request("loja_id") == $loja->id ? "selected" : "" }}>
+                            {{ $loja->nome }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-dc-primary w-100">
+                    <i class="bi bi-funnel"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -35,12 +58,11 @@
                                    class="btn btn-sm btn-outline-primary" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <form action="{{ route("admin.areas-auditoria.destroy", $area->id) }}"
+                                <form action="{{ route("admin.areas-auditoria.excluir", $area->id) }}"
                                       method="POST"
                                       class="d-inline"
                                       onsubmit="return confirm('Tem certeza que deseja excluir esta área?')">
                                     @csrf
-                                    @method("DELETE")
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir">
                                         <i class="bi bi-trash"></i>
                                     </button>

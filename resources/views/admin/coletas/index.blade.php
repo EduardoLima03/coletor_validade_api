@@ -74,12 +74,20 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label">Data inicio</label>
+                <label class="form-label">Validade inicio</label>
                 <input type="date" name="data_inicio" class="form-control" value="{{ request("data_inicio", date("Y-m-d")) }}">
             </div>
             <div class="col-md-2">
-                <label class="form-label">Data fim</label>
+                <label class="form-label">Validade fim</label>
                 <input type="date" name="data_fim" class="form-control" value="{{ request("data_fim") }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Coleta inicio</label>
+                <input type="date" name="data_coleta_inicio" class="form-control" value="{{ request("data_coleta_inicio") }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Coleta fim</label>
+                <input type="date" name="data_coleta_fim" class="form-control" value="{{ request("data_coleta_fim") }}">
             </div>
             <div class="col-md-2 d-flex align-items-end gap-1">
                 <button type="submit" class="btn btn-dc-primary flex-grow-1">

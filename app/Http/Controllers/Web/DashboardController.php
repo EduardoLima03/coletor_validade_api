@@ -91,8 +91,10 @@ class DashboardController extends Controller
             ->orderByDesc("total_coletas")
             ->get()
             ->map(function ($item) {
-                if ($item->primeiro_registro && $item->ultimo_registro) {
-                    $diff = $item->ultimo_registro->diffInMinutes($item->primeiro_registro);
+                $inicio = $item->primeiro_registro ? \Carbon\Carbon::parse($item->primeiro_registro) : null;
+                $fim = $item->ultimo_registro ? \Carbon\Carbon::parse($item->ultimo_registro) : null;
+                if ($inicio && $fim) {
+                    $diff = $fim->diffInMinutes($inicio);
                     $item->tempo_minutos = $diff;
                     $item->tempo_formatado = floor($diff / 60) . "h " . ($diff % 60) . "min";
                 } else {

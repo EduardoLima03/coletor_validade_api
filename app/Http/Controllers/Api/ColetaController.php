@@ -6,11 +6,22 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Coleta;
 use App\Models\Barcode;
+use App\Models\Loja;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ColetaController extends Controller
 {
+    private function lojaNome($lojaId): string
+    {
+        static $cache = [];
+        if (!isset($cache[$lojaId])) {
+            $loja = Loja::find($lojaId);
+            $cache[$lojaId] = $loja?->nome ?? "#$lojaId";
+        }
+        return $cache[$lojaId];
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -46,12 +57,13 @@ class ColetaController extends Controller
 
                 if ($validated["quantidade"] == 0) {
                     $existing->delete();
+                    $lojaNome = $this->lojaNome($validated['loja_id']);
                     AuditLog::log(
                         "coleta.replace",
                         "Coleta",
                         $existing->id,
                         "Removeu coleta ID {$existing->id} (qty 0): EAN {$validated['ean']}, "
-                        . "loja {$validated['loja_id']}, quantidade {$oldQty} → 0"
+                        . "loja {$lojaNome}, quantidade {$oldQty} → 0"
                     );
                     return $existing->fresh()->load("loja", "user", "areaAuditoria");
                 }
@@ -62,11 +74,12 @@ class ColetaController extends Controller
 
                 $existing->update(["quantidade" => $validated["quantidade"]]);
 
+                $lojaNome = $this->lojaNome($validated['loja_id']);
                 AuditLog::log(
                     "coleta.replace",
                     "Coleta",
                     $existing->id,
-                    "Substituiu coleta ID {$existing->id}: EAN {$validated['ean']}, loja {$validated['loja_id']}, "
+                    "Substituiu coleta ID {$existing->id}: EAN {$validated['ean']}, loja {$lojaNome}, "
                     . "quantidade {$oldQty} → {$validated['quantidade']}, validade {$validated['validade']}"
                 );
 
@@ -83,12 +96,13 @@ class ColetaController extends Controller
                     $existing->update(["quantidade" => $newQty]);
                 }
 
+                $lojaNome = $this->lojaNome($validated['loja_id']);
                 AuditLog::log(
                     "coleta.add",
                     "Coleta",
                     $existing->id,
                     "Adicionou quantidade à coleta ID {$existing->id}: EAN {$validated['ean']}, "
-                    . "loja {$validated['loja_id']}, validade {$validated['validade']}"
+                    . "loja {$lojaNome}, validade {$validated['validade']}"
                 );
 
                 return $existing->fresh()->load("loja", "user", "areaAuditoria");
@@ -102,13 +116,15 @@ class ColetaController extends Controller
                 "ean" => $validated["ean"],
                 "quantidade" => $validated["quantidade"],
                 "data_validade" => $validated["validade"],
+                "datahora" => now(),
             ]);
 
+            $lojaNome = $this->lojaNome($validated['loja_id']);
             AuditLog::log(
                 "coleta.create",
                 "Coleta",
                 $nova->id,
-                "Criou coleta: EAN {$validated['ean']}, loja {$validated['loja_id']}, "
+                "Criou coleta: EAN {$validated['ean']}, loja {$lojaNome}, "
                 . "quantidade {$validated['quantidade']}, validade {$validated['validade']}"
             );
 
@@ -131,12 +147,13 @@ class ColetaController extends Controller
         if ($validated["quantidade"] === 0) {
             $coleta->delete();
 
+            $lojaNome = $this->lojaNome($coleta->loja_id);
             AuditLog::log(
                 "coleta.delete",
                 "Coleta",
                 $coleta->id,
                 "Removeu coleta ID {$coleta->id} (qty 0): EAN {$coleta->ean}, "
-                . "loja {$coleta->loja_id}"
+                . "loja {$lojaNome}"
             );
 
             return response()->json(["message" => "Coleta removida", "coleta" => $coleta]);
@@ -197,12 +214,13 @@ class ColetaController extends Controller
         $coleta = Coleta::withTrashed()->findOrFail($id);
         $coleta->restore();
 
+        $lojaNome = $this->lojaNome($coleta->loja_id);
         AuditLog::log(
             "coleta.restore",
             "Coleta",
             $coleta->id,
             "Restaurou coleta ID {$coleta->id}: EAN {$coleta->ean}, "
-            . "loja {$coleta->loja_id}, quantidade {$coleta->quantidade}"
+            . "loja {$lojaNome}, quantidade {$coleta->quantidade}"
         );
 
         return response()->json($coleta->load("loja", "user", "areaAuditoria"));
