@@ -26,6 +26,9 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::middleware(['auth:sanctum', 'role:GERENCIA,ADMIN'])->group(function () {
+    Route::get('coleta/trashed', [App\Http\Controllers\Api\ColetaController::class, 'trashed']);
+    Route::put('coleta/{id}/restore', [App\Http\Controllers\Api\ColetaController::class, 'restore']);
+
     Route::apiResource('product', 'ProductController');
     Route::post('product-save-all', [App\Http\Controllers\ProductController::class, 'saveAll']);
     Route::apiResource('ean', 'BarcodeController');

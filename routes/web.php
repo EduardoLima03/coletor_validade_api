@@ -30,6 +30,10 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
 
     Route::get('/coletas', [App\Http\Controllers\Web\ColetaController::class, 'index'])
         ->name('coletas.index');
+    Route::get('/coletas/trashed', [App\Http\Controllers\Web\ColetaController::class, 'trashed'])
+        ->name('coletas.trashed');
+    Route::put('/coletas/{coleta}/restore', [App\Http\Controllers\Web\ColetaController::class, 'restore'])
+        ->name('coletas.restore');
     Route::get('/coletas/exportar/xlsx', [App\Http\Controllers\Web\ColetaController::class, 'exportXlsx'])
         ->name('coletas.export.xlsx');
     Route::get('/coletas/exportar/csv', [App\Http\Controllers\Web\ColetaController::class, 'exportCsv'])

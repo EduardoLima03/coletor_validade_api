@@ -17,7 +17,7 @@ class ColetaController extends Controller
             "loja_id" => "required|exists:lojas,id",
             "area_auditoria_id" => "nullable|exists:areas_auditoria,id",
             "ean" => "required|string|max:20",
-            "quantidade" => "required|integer|min:1",
+            "quantidade" => "required|integer|min:0",
             "validade" => "required|date",
             "descricao" => "nullable|string|max:255",
             "action" => "nullable|in:replace,add",
@@ -26,7 +26,8 @@ class ColetaController extends Controller
         $descricao = $validated["descricao"] ?? $this->buscarDescricao($validated["ean"]);
         $action = $validated["action"] ?? null;
 
-        $existing = Coleta::where("loja_id", $validated["loja_id"])
+        $existing = Coleta::withTrashed()
+            ->where("loja_id", $validated["loja_id"])
             ->where("area_auditoria_id", $validated["area_auditoria_id"])
             ->where("ean", $validated["ean"])
             ->where("data_validade", $validated["validade"])
@@ -42,29 +43,52 @@ class ColetaController extends Controller
         $coleta = DB::transaction(function () use ($validated, $descricao, $action, $existing) {
             if ($action === "replace" && $existing) {
                 $oldQty = $existing->quantidade;
-                $existing->delete();
+
+                if ($validated["quantidade"] == 0) {
+                    $existing->delete();
+                    AuditLog::log(
+                        "coleta.replace",
+                        "Coleta",
+                        $existing->id,
+                        "Removeu coleta ID {$existing->id} (qty 0): EAN {$validated['ean']}, "
+                        . "loja {$validated['loja_id']}, quantidade {$oldQty} → 0"
+                    );
+                    return $existing->fresh()->load("loja", "user", "areaAuditoria");
+                }
+
+                if ($existing->trashed()) {
+                    $existing->restore();
+                }
+
+                $existing->update(["quantidade" => $validated["quantidade"]]);
 
                 AuditLog::log(
                     "coleta.replace",
                     "Coleta",
-                    null,
+                    $existing->id,
                     "Substituiu coleta ID {$existing->id}: EAN {$validated['ean']}, loja {$validated['loja_id']}, "
                     . "quantidade {$oldQty} → {$validated['quantidade']}, validade {$validated['validade']}"
                 );
+
+                return $existing->fresh()->load("loja", "user", "areaAuditoria");
             }
 
             if ($action === "add" && $existing) {
-                $oldQty = $existing->quantidade;
-                $newQty = $oldQty + $validated["quantidade"];
-                $existing->update(["quantidade" => $newQty]);
+                if ($existing->trashed()) {
+                    $existing->restore();
+                    $existing->update(["quantidade" => $validated["quantidade"]]);
+                } else {
+                    $oldQty = $existing->quantidade;
+                    $newQty = $oldQty + $validated["quantidade"];
+                    $existing->update(["quantidade" => $newQty]);
+                }
 
                 AuditLog::log(
                     "coleta.add",
                     "Coleta",
                     $existing->id,
                     "Adicionou quantidade à coleta ID {$existing->id}: EAN {$validated['ean']}, "
-                    . "loja {$validated['loja_id']}, {$oldQty} → {$newQty}, "
-                    . "validade {$validated['validade']}"
+                    . "loja {$validated['loja_id']}, validade {$validated['validade']}"
                 );
 
                 return $existing->fresh()->load("loja", "user", "areaAuditoria");
@@ -100,9 +124,23 @@ class ColetaController extends Controller
         $coleta = Coleta::findOrFail($id);
 
         $validated = $request->validate([
-            "quantidade" => "required|integer|min:1",
+            "quantidade" => "required|integer|min:0",
             "validade" => "required|date",
         ]);
+
+        if ($validated["quantidade"] === 0) {
+            $coleta->delete();
+
+            AuditLog::log(
+                "coleta.delete",
+                "Coleta",
+                $coleta->id,
+                "Removeu coleta ID {$coleta->id} (qty 0): EAN {$coleta->ean}, "
+                . "loja {$coleta->loja_id}"
+            );
+
+            return response()->json(["message" => "Coleta removida", "coleta" => $coleta]);
+        }
 
         $oldQty = $coleta->quantidade;
         $coleta->update([
@@ -130,7 +168,8 @@ class ColetaController extends Controller
             "validade" => "required|date",
         ]);
 
-        $existing = Coleta::where("loja_id", $validated["loja_id"])
+        $existing = Coleta::withTrashed()
+            ->where("loja_id", $validated["loja_id"])
             ->where("area_auditoria_id", $validated["area_auditoria_id"])
             ->where("ean", $validated["ean"])
             ->where("data_validade", $validated["validade"])
@@ -138,8 +177,35 @@ class ColetaController extends Controller
 
         return response()->json([
             "exists" => $existing !== null,
+            "trashed" => $existing ? $existing->trashed() : false,
             "coleta" => $existing ? $existing->load("loja", "user", "areaAuditoria") : null,
         ]);
+    }
+
+    public function trashed()
+    {
+        $coletas = Coleta::onlyTrashed()
+            ->with("loja", "areaAuditoria", "user")
+            ->orderBy("deleted_at", "desc")
+            ->paginate(50);
+
+        return response()->json($coletas);
+    }
+
+    public function restore($id)
+    {
+        $coleta = Coleta::withTrashed()->findOrFail($id);
+        $coleta->restore();
+
+        AuditLog::log(
+            "coleta.restore",
+            "Coleta",
+            $coleta->id,
+            "Restaurou coleta ID {$coleta->id}: EAN {$coleta->ean}, "
+            . "loja {$coleta->loja_id}, quantidade {$coleta->quantidade}"
+        );
+
+        return response()->json($coleta->load("loja", "user", "areaAuditoria"));
     }
 
     private function buscarDescricao($ean)

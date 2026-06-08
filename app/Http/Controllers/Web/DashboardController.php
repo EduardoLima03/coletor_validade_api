@@ -14,7 +14,7 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Coleta::query();
+        $query = Coleta::withTrashed();
 
         $user = auth()->user();
         if ($user->position !== 'ADMIN') {
@@ -76,6 +76,34 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
+        $metricasUsuarios = (clone $query)
+            ->select(
+                "user_id",
+                DB::raw("count(*) as total_coletas"),
+                DB::raw("SUM(quantidade) as total_qtd"),
+                DB::raw("COUNT(DISTINCT ean) as total_eans"),
+                DB::raw("COUNT(DISTINCT area_auditoria_id) as total_areas"),
+                DB::raw("MIN(datahora) as primeiro_registro"),
+                DB::raw("MAX(datahora) as ultimo_registro"),
+            )
+            ->with("user")
+            ->groupBy("user_id")
+            ->orderByDesc("total_coletas")
+            ->get()
+            ->map(function ($item) {
+                if ($item->primeiro_registro && $item->ultimo_registro) {
+                    $diff = $item->ultimo_registro->diffInMinutes($item->primeiro_registro);
+                    $item->tempo_minutos = $diff;
+                    $item->tempo_formatado = floor($diff / 60) . "h " . ($diff % 60) . "min";
+                } else {
+                    $item->tempo_minutos = 0;
+                    $item->tempo_formatado = "-";
+                }
+                return $item;
+            });
+
+        $coletasExcluidas = Coleta::onlyTrashed()->count();
+
         $lojas = $user->lojasAcesso();
         $auditores = User::orderBy("name")->get();
         $areas = AreaAuditoria::orderBy("nome")->get();
@@ -90,6 +118,8 @@ class DashboardController extends Controller
             "coletasPorLoja",
             "coletasPorAuditor",
             "ultimasColetas",
+            "metricasUsuarios",
+            "coletasExcluidas",
             "lojas",
             "auditores",
             "areas",

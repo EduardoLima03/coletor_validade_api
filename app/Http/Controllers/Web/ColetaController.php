@@ -178,4 +178,31 @@ class ColetaController extends Controller
 
         return redirect()->route("admin.coletas.index")->with("success", "Coleta excluída com sucesso!");
     }
+
+    public function trashed()
+    {
+        $query = Coleta::onlyTrashed()->with("loja", "areaAuditoria", "user");
+        $query = $this->lojaFilter($query);
+
+        $coletas = $query->orderBy("deleted_at", "desc")->paginate(50);
+        $lojas = $this->lojasDisponiveis();
+
+        return view("admin.coletas.trashed", compact("coletas", "lojas"));
+    }
+
+    public function restore($id)
+    {
+        $coleta = Coleta::withTrashed()->findOrFail($id);
+
+        $lojaIds = auth()->user()->lojasAcessoIds();
+        if (!empty($lojaIds) && !in_array($coleta->loja_id, $lojaIds)) {
+            abort(403, 'Você não tem acesso a esta loja.');
+        }
+
+        $coleta->restore();
+
+        AuditLog::log("Restaurou coleta #$coleta->id - EAN: $coleta->ean", "coleta", $coleta->id);
+
+        return redirect()->route("admin.coletas.trashed")->with("success", "Coleta restaurada com sucesso!");
+    }
 }

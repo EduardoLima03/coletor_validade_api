@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Coleta extends Model
 {
+    use SoftDeletes;
     protected $fillable = [
         "loja_id", "area_auditoria_id", "user_id", "descricao",
         "ean", "quantidade", "data_validade", "datahora"
@@ -15,6 +17,7 @@ class Coleta extends Model
         "data_validade" => "date",
         "datahora" => "datetime",
         "quantidade" => "integer",
+        "deleted_at" => "datetime",
     ];
 
     public function loja()

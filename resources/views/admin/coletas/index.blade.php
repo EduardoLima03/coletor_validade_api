@@ -6,6 +6,9 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0"><i class="bi bi-clipboard-data"></i> Coletas</h4>
     <div class="btn-group">
+        <a href="{{ route("admin.coletas.trashed") }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-archive"></i> Excluídos
+        </a>
         <a href="{{ route("admin.coletas.export.xlsx", request()->query()) }}" class="btn btn-success btn-sm">
             <i class="bi bi-file-earmark-excel"></i> Excel
         </a>

@@ -119,6 +119,14 @@
             </div>
         </div>
     </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card text-white h-100" style="background: linear-gradient(135deg, #6c757d, #495057);">
+            <div class="card-body text-center">
+                <h6 class="card-title mb-1 opacity-75 small">Excluídas</h6>
+                <h3 class="mb-0 fw-bold">{{ $coletasExcluidas }}</h3>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row g-3">
@@ -177,6 +185,48 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-person-lines-fill"></i> Métricas por Usuário</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Usuário</th>
+                                <th class="text-end">Coletas</th>
+                                <th class="text-end">Qtd Total</th>
+                                <th class="text-end">EANs</th>
+                                <th class="text-end">Áreas</th>
+                                <th class="text-end">Tempo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($metricasUsuarios as $item)
+                                <tr>
+                                    <td>{{ $item->user->name ?? "-" }}</td>
+                                    <td class="text-end">{{ $item->total_coletas }}</td>
+                                    <td class="text-end">{{ $item->total_qtd }}</td>
+                                    <td class="text-end">{{ $item->total_eans }}</td>
+                                    <td class="text-end">{{ $item->total_areas }}</td>
+                                    <td class="text-end">{{ $item->tempo_formatado }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-3">Nenhuma coleta.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
