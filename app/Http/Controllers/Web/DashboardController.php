@@ -42,11 +42,11 @@ class DashboardController extends Controller
         }
 
         if ($request->filled("data_inicio")) {
-            $query->whereDate("data_validade", ">=", $request->data_inicio);
+            $query->whereDate("datahora", ">=", $request->data_inicio);
         }
 
         if ($request->filled("data_fim")) {
-            $query->whereDate("data_validade", "<=", $request->data_fim);
+            $query->whereDate("datahora", "<=", $request->data_fim);
         }
 
         $totalColetas = (clone $query)->count();

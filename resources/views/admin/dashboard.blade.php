@@ -51,11 +51,11 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label">Data inicio</label>
+                <label class="form-label">Coleta inicio</label>
                 <input type="date" name="data_inicio" class="form-control" value="{{ request("data_inicio") }}">
             </div>
             <div class="col-md-2">
-                <label class="form-label">Data fim</label>
+                <label class="form-label">Coleta fim</label>
                 <input type="date" name="data_fim" class="form-control" value="{{ request("data_fim") }}">
             </div>
             <div class="col-12 d-flex gap-1">
