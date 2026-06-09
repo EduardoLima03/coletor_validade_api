@@ -49,7 +49,7 @@
                 <tbody>
                     @forelse ($areas as $area)
                         <tr>
-                            <td>{{ $area->loja?->nome ?? '---' }}</td>
+                            <td>{{ $area->lojas->pluck("nome")->implode(", ") ?: "---" }}</td>
                             <td>{{ $area->nome }}</td>
                             <td>{{ $area->descricao ?? '---' }}</td>
                             <td>{{ $area->created_at->format("d/m/Y H:i") }}</td>

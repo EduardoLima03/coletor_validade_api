@@ -10,12 +10,18 @@ class AreaAuditoriaController extends Controller
 {
     public function index(Request $request)
     {
-        $query = AreaAuditoria::orderBy("nome");
+        $query = AreaAuditoria::with("lojas")->orderBy("nome");
 
         if ($request->filled("loja_id")) {
-            $query->where("loja_id", $request->loja_id);
+            $query->whereHas("lojas", fn($q) => $q->where("loja_id", $request->loja_id));
         }
 
-        return response()->json($query->get());
+        $areas = $query->get();
+
+        $areas->each(function ($area) {
+            $area->loja_id = $area->lojas->first()?->id;
+        });
+
+        return response()->json($areas);
     }
 }

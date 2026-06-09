@@ -17,4 +17,9 @@ class Loja extends Model
     {
         return $this->belongsToMany(User::class, 'loja_user');
     }
+
+    public function areasAuditoria()
+    {
+        return $this->belongsToMany(AreaAuditoria::class, 'area_auditoria_loja');
+    }
 }

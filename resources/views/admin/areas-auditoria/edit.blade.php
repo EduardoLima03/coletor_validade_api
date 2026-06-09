@@ -16,19 +16,27 @@
             @csrf
             @method("PUT")
             <div class="mb-3">
-                <label for="loja_id" class="form-label">Loja</label>
-                <select class="form-control @error("loja_id") is-invalid @enderror"
-                        id="loja_id" name="loja_id" required>
-                    <option value="">Selecione a loja</option>
+                <label class="form-label">Lojas vinculadas</label>
+                <div class="row g-2 @error("loja_ids") is-invalid @enderror">
                     @foreach ($lojas as $loja)
-                        <option value="{{ $loja->id }}"
-                            {{ old("loja_id", $areaAuditorium->loja_id) == $loja->id ? "selected" : "" }}>
-                            {{ $loja->nome }}
-                        </option>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                       name="loja_ids[]" value="{{ $loja->id }}"
+                                       id="loja_{{ $loja->id }}"
+                                       {{ in_array($loja->id, old("loja_ids", $areaAuditorium->lojas->pluck("id")->toArray())) ? "checked" : "" }}>
+                                <label class="form-check-label" for="loja_{{ $loja->id }}">
+                                    {{ $loja->nome }}
+                                </label>
+                            </div>
+                        </div>
                     @endforeach
-                </select>
-                @error("loja_id")
-                    <div class="invalid-feedback">{{ $message }}</div>
+                </div>
+                @error("loja_ids")
+                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                @enderror
+                @error("loja_ids.*")
+                    <div class="invalid-feedback d-block">{{ $message }}</div>
                 @enderror
             </div>
             <div class="mb-3">
