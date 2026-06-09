@@ -10,13 +10,12 @@ class Coleta extends Model
     use SoftDeletes;
     protected $fillable = [
         "loja_id", "area_auditoria_id", "user_id", "descricao",
-        "ean", "quantidade", "data_validade", "datahora"
+        "ean", "quantidade", "unidade", "data_validade", "datahora"
     ];
 
     protected $casts = [
         "data_validade" => "date",
         "datahora" => "datetime",
-        "quantidade" => "integer",
         "deleted_at" => "datetime",
     ];
 

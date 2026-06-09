@@ -57,14 +57,26 @@
             <div class="row">
                 <div class="col-md-4 mb-3">
                     <label for="quantidade" class="form-label">Quantidade</label>
-                    <input type="number"
+                    <input type="text"
                            class="form-control @error("quantidade") is-invalid @enderror"
                            id="quantidade"
                            name="quantidade"
                            value="{{ old("quantidade", $coleta->quantidade) }}"
-                           required
-                           min="1">
+                           required>
                     @error("quantidade")
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="unidade" class="form-label">Unidade</label>
+                    <select class="form-select @error("unidade") is-invalid @enderror" id="unidade" name="unidade">
+                        @foreach (["un", "kg", "cx"] as $u)
+                            <option value="{{ $u }}" {{ old("unidade", $coleta->unidade ?? "un") == $u ? "selected" : "" }}>
+                                {{ $u }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error("unidade")
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>

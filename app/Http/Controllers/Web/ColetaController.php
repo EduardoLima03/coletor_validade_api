@@ -134,7 +134,9 @@ class ColetaController extends Controller
 
         $coleta->load("loja", "areaAuditoria");
         $lojas = $this->lojasDisponiveis();
-        $areasAuditoria = AreaAuditoria::where("loja_id", $coleta->loja_id)
+        $areasAuditoria = AreaAuditoria::whereHas('lojas', function ($q) use ($coleta) {
+                $q->where('lojas.id', $coleta->loja_id);
+            })
             ->orderBy("nome")
             ->get();
         return view("admin.coletas.edit", compact("coleta", "lojas", "areasAuditoria"));
@@ -155,7 +157,8 @@ class ColetaController extends Controller
 
         $validated = $request->validate([
             "area_auditoria_id" => "nullable|exists:areas_auditoria,id",
-            "quantidade" => "required|integer|min:1",
+            "quantidade" => "required|string|max:50",
+            "unidade" => "nullable|string|max:10",
             "data_validade" => "required|date",
         ]);
 

@@ -46,6 +46,7 @@
                         <th>Descricao</th>
                         <th>EAN</th>
                         <th>Qtd</th>
+                        <th>Un</th>
                         <th>Validade</th>
                         <th>Excluído em</th>
                         <th class="text-center" width="100">Ação</th>
@@ -61,6 +62,7 @@
                             <td>{{ Str::limit($coleta->descricao, 40) }}</td>
                             <td>{{ $coleta->ean }}</td>
                             <td>{{ $coleta->quantidade }}</td>
+                            <td>{{ $coleta->unidade ?? "un" }}</td>
                             <td>{{ $coleta->data_validade->format("d/m/Y") }}</td>
                             <td>{{ $coleta->deleted_at->format("d/m/Y H:i") }}</td>
                             <td class="text-center">

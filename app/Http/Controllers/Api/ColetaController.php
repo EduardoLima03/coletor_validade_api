@@ -28,7 +28,8 @@ class ColetaController extends Controller
             "loja_id" => "required|exists:lojas,id",
             "area_auditoria_id" => "nullable|exists:areas_auditoria,id",
             "ean" => "required|string|max:20",
-            "quantidade" => "required|integer|min:0",
+            "quantidade" => "required|string|max:50",
+            "unidade" => "nullable|string|max:10",
             "validade" => "required|date",
             "descricao" => "nullable|string|max:255",
             "action" => "nullable|in:replace,add",
@@ -55,7 +56,7 @@ class ColetaController extends Controller
             if ($action === "replace" && $existing) {
                 $oldQty = $existing->quantidade;
 
-                if ($validated["quantidade"] == 0) {
+                if ($validated["quantidade"] == "0" || $validated["quantidade"] === "0") {
                     $existing->delete();
                     $lojaNome = $this->lojaNome($validated['loja_id']);
                     AuditLog::log(
@@ -72,7 +73,11 @@ class ColetaController extends Controller
                     $existing->restore();
                 }
 
-                $existing->update(["quantidade" => $validated["quantidade"]]);
+                $existing->update([
+                    "quantidade" => $validated["quantidade"],
+                    "unidade" => $validated["unidade"] ?? "un",
+                    "user_id" => auth()->id(),
+                ]);
 
                 $lojaNome = $this->lojaNome($validated['loja_id']);
                 AuditLog::log(
@@ -89,11 +94,21 @@ class ColetaController extends Controller
             if ($action === "add" && $existing) {
                 if ($existing->trashed()) {
                     $existing->restore();
-                    $existing->update(["quantidade" => $validated["quantidade"]]);
+                    $existing->update([
+                        "quantidade" => $validated["quantidade"],
+                        "unidade" => $validated["unidade"] ?? "un",
+                    ]);
                 } else {
                     $oldQty = $existing->quantidade;
-                    $newQty = $oldQty + $validated["quantidade"];
-                    $existing->update(["quantidade" => $newQty]);
+                    if (is_numeric($oldQty) && is_numeric($validated["quantidade"])) {
+                        $newQty = $oldQty + $validated["quantidade"];
+                    } else {
+                        $newQty = $validated["quantidade"];
+                    }
+                    $existing->update([
+                        "quantidade" => $newQty,
+                        "unidade" => $validated["unidade"] ?? "un",
+                    ]);
                 }
 
                 $lojaNome = $this->lojaNome($validated['loja_id']);
@@ -115,6 +130,7 @@ class ColetaController extends Controller
                 "descricao" => $descricao,
                 "ean" => $validated["ean"],
                 "quantidade" => $validated["quantidade"],
+                "unidade" => $validated["unidade"] ?? "un",
                 "data_validade" => $validated["validade"],
                 "datahora" => now(),
             ]);
@@ -140,11 +156,12 @@ class ColetaController extends Controller
         $coleta = Coleta::findOrFail($id);
 
         $validated = $request->validate([
-            "quantidade" => "required|integer|min:0",
+            "quantidade" => "required|string|max:50",
+            "unidade" => "nullable|string|max:10",
             "validade" => "required|date",
         ]);
 
-        if ($validated["quantidade"] === 0) {
+        if ($validated["quantidade"] === "0" || $validated["quantidade"] == 0) {
             $coleta->delete();
 
             $lojaNome = $this->lojaNome($coleta->loja_id);
@@ -162,6 +179,7 @@ class ColetaController extends Controller
         $oldQty = $coleta->quantidade;
         $coleta->update([
             "quantidade" => $validated["quantidade"],
+            "unidade" => $validated["unidade"] ?? $coleta->unidade ?? "un",
             "data_validade" => $validated["validade"],
         ]);
 

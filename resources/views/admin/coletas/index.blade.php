@@ -114,6 +114,7 @@
                         <th>Descricao</th>
                         <th>EAN</th>
                         <th>Qtd</th>
+                        <th>Un</th>
                         <th>Validade</th>
                         <th>Dias</th>
                         <th>Data/Hora</th>
@@ -132,6 +133,7 @@
                             <td>{{ Str::limit($coleta->descricao, 40) }}</td>
                             <td>{{ $coleta->ean }}</td>
                             <td>{{ $coleta->quantidade }}</td>
+                            <td>{{ $coleta->unidade ?? "un" }}</td>
                             <td>{{ $coleta->data_validade->format("d/m/Y") }}</td>
                             <td>
                                 @php $dias = $coleta->dias_a_vencer; @endphp
