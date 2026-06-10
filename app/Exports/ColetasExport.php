@@ -20,10 +20,13 @@ class ColetasExport implements FromQuery, WithHeadings, WithMapping, WithStyles
     protected $ean;
     protected $descricao;
     protected $areaAuditoriaId;
+    protected $dataColetaInicio;
+    protected $dataColetaFim;
 
     public function __construct(
         $lojaId = null, $dias = null, $dataInicio = null, $dataFim = null,
-        $user = null, $userId = null, $ean = null, $descricao = null, $areaAuditoriaId = null
+        $user = null, $userId = null, $ean = null, $descricao = null, $areaAuditoriaId = null,
+        $dataColetaInicio = null, $dataColetaFim = null
     ) {
         $this->user = $user;
         $this->lojaId = $lojaId;
@@ -34,6 +37,8 @@ class ColetasExport implements FromQuery, WithHeadings, WithMapping, WithStyles
         $this->ean = $ean;
         $this->descricao = $descricao;
         $this->areaAuditoriaId = $areaAuditoriaId;
+        $this->dataColetaInicio = $dataColetaInicio;
+        $this->dataColetaFim = $dataColetaFim;
     }
 
     public function query()
@@ -80,21 +85,30 @@ class ColetasExport implements FromQuery, WithHeadings, WithMapping, WithStyles
             $query->where("area_auditoria_id", $this->areaAuditoriaId);
         }
 
+        if ($this->dataColetaInicio) {
+            $query->whereDate("datahora", ">=", $this->dataColetaInicio);
+        }
+
+        if ($this->dataColetaFim) {
+            $query->whereDate("datahora", "<=", $this->dataColetaFim);
+        }
+
         return $query->orderBy("data_validade");
     }
 
     public function headings(): array
     {
         return [
-            "ID",
+            "#",
             "Loja",
             "Auditor",
             "Setor",
             "Descricao",
             "EAN",
-            "Quantidade",
+            "Qtd",
+            "Un",
             "Validade",
-            "Dias a Vencer",
+            "Dias",
             "Data/Hora",
         ];
     }
@@ -109,6 +123,7 @@ class ColetasExport implements FromQuery, WithHeadings, WithMapping, WithStyles
             $coleta->descricao,
             $coleta->ean,
             $coleta->quantidade,
+            $coleta->unidade ?? "un",
             $coleta->data_validade->format("d/m/Y"),
             $coleta->dias_a_vencer,
             $coleta->datahora ? $coleta->datahora->format("d/m/Y H:i") : "-",

@@ -103,7 +103,9 @@ class ColetaController extends Controller
                 $request->user_id,
                 $request->ean,
                 $request->descricao,
-                $request->area_auditoria_id
+                $request->area_auditoria_id,
+                $request->data_coleta_inicio,
+                $request->data_coleta_fim
             ),
             "coletas.xlsx"
         );
@@ -121,7 +123,9 @@ class ColetaController extends Controller
                 $request->user_id,
                 $request->ean,
                 $request->descricao,
-                $request->area_auditoria_id
+                $request->area_auditoria_id,
+                $request->data_coleta_inicio,
+                $request->data_coleta_fim
             ),
             "coletas.csv"
         );
