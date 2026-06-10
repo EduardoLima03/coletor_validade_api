@@ -73,9 +73,10 @@ class UserController extends Controller
 
     public function edit($id)
     {
+        $returnUrl = request('return_url', route('admin.users.index'));
         $user = User::with('lojas')->findOrFail($id);
         $lojas = Loja::orderBy('nome')->get();
-        return view('admin.users.edit', compact('user', 'lojas'));
+        return view('admin.users.edit', compact('user', 'lojas', 'returnUrl'));
     }
 
     public function update(Request $request, $id)
@@ -110,11 +111,13 @@ class UserController extends Controller
 
         AuditLog::log('update', 'user', $user->id, "Atualizou usuário {$user->name} ({$user->email})");
 
-        return redirect()->route('admin.users.index')
+        $returnUrl = $request->return_url ?? route('admin.users.index');
+
+        return redirect($returnUrl)
             ->with('success', 'Usuário atualizado com sucesso.');
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $user = User::findOrFail($id);
 
@@ -128,7 +131,9 @@ class UserController extends Controller
 
         AuditLog::log('delete', 'user', $id, "Deletou usuário {$name}");
 
-        return redirect()->route('admin.users.index')
+        $returnUrl = $request->return_url ?? route('admin.users.index');
+
+        return redirect($returnUrl)
             ->with('success', 'Usuário deletado com sucesso.');
     }
 }

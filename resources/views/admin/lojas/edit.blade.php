@@ -5,7 +5,7 @@
 @section("content")
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0"><i class="bi bi-pencil"></i> Editar Loja</h4>
-    <a href="{{ route("admin.lojas.index") }}" class="btn btn-outline-secondary">
+    <a href="{{ $returnUrl }}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left"></i> Voltar
     </a>
 </div>
@@ -15,6 +15,7 @@
         <form action="{{ route("admin.lojas.update", $loja->id) }}" method="POST">
             @csrf
             @method("PUT")
+            <input type="hidden" name="return_url" value="{{ $returnUrl }}">
             <div class="mb-3">
                 <label for="nome" class="form-label">Nome da Loja</label>
                 <input type="text"
@@ -30,7 +31,7 @@
             <button type="submit" class="btn btn-primary">
                 <i class="bi bi-check-lg"></i> Atualizar
             </button>
-            <a href="{{ route("admin.lojas.index") }}" class="btn btn-outline-secondary">Cancelar</a>
+            <a href="{{ $returnUrl }}" class="btn btn-outline-secondary">Cancelar</a>
         </form>
     </div>
 </div>

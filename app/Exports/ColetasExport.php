@@ -16,14 +16,24 @@ class ColetasExport implements FromQuery, WithHeadings, WithMapping, WithStyles
     protected $dias;
     protected $dataInicio;
     protected $dataFim;
+    protected $userId;
+    protected $ean;
+    protected $descricao;
+    protected $areaAuditoriaId;
 
-    public function __construct($lojaId = null, $dias = null, $dataInicio = null, $dataFim = null, $user = null)
-    {
+    public function __construct(
+        $lojaId = null, $dias = null, $dataInicio = null, $dataFim = null,
+        $user = null, $userId = null, $ean = null, $descricao = null, $areaAuditoriaId = null
+    ) {
         $this->user = $user;
         $this->lojaId = $lojaId;
         $this->dias = $dias;
         $this->dataInicio = $dataInicio;
         $this->dataFim = $dataFim;
+        $this->userId = $userId;
+        $this->ean = $ean;
+        $this->descricao = $descricao;
+        $this->areaAuditoriaId = $areaAuditoriaId;
     }
 
     public function query()
@@ -52,6 +62,22 @@ class ColetasExport implements FromQuery, WithHeadings, WithMapping, WithStyles
 
         if ($this->dataFim) {
             $query->whereDate("data_validade", "<=", $this->dataFim);
+        }
+
+        if ($this->userId) {
+            $query->where("user_id", $this->userId);
+        }
+
+        if ($this->ean) {
+            $query->where("ean", "like", "%{$this->ean}%");
+        }
+
+        if ($this->descricao) {
+            $query->where("descricao", "like", "%{$this->descricao}%");
+        }
+
+        if ($this->areaAuditoriaId) {
+            $query->where("area_auditoria_id", $this->areaAuditoriaId);
         }
 
         return $query->orderBy("data_validade");

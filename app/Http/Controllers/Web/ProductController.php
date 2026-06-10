@@ -58,8 +58,9 @@ class ProductController extends Controller
 
     public function edit($id)
     {
+        $returnUrl = request('return_url', route('admin.products.index'));
         $product = Product::findOrFail($id);
-        return view('admin.products.edit', compact('product'));
+        return view('admin.products.edit', compact('product', 'returnUrl'));
     }
 
     public function update(Request $request, $id)
@@ -75,11 +76,13 @@ class ProductController extends Controller
 
         AuditLog::log('update', 'product', $product->id, "Atualizou produto [{$product->code}] {$product->description}");
 
-        return redirect()->route('admin.products.index')
+        $returnUrl = $request->return_url ?? route('admin.products.index');
+
+        return redirect($returnUrl)
             ->with('success', 'Produto atualizado com sucesso.');
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $product = Product::findOrFail($id);
         $desc = "[{$product->code}] {$product->description}";
@@ -88,7 +91,9 @@ class ProductController extends Controller
 
         AuditLog::log('delete', 'product', $id, "Deletou produto {$desc}");
 
-        return redirect()->route('admin.products.index')
+        $returnUrl = $request->return_url ?? route('admin.products.index');
+
+        return redirect($returnUrl)
             ->with('success', 'Produto deletado com sucesso.');
     }
 }

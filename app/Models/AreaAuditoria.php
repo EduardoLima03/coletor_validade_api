@@ -9,12 +9,13 @@ class AreaAuditoria extends Model
     protected $table = 'areas_auditoria';
 
     protected $fillable = [
+        'loja_id',
         'nome',
         'descricao',
     ];
 
-    public function lojas()
+    public function loja()
     {
-        return $this->belongsToMany(Loja::class, 'area_auditoria_loja');
+        return $this->belongsTo(Loja::class);
     }
 }

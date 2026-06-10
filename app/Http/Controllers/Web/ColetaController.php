@@ -99,7 +99,11 @@ class ColetaController extends Controller
                 $request->dias,
                 $request->data_inicio,
                 $request->data_fim,
-                auth()->user()
+                auth()->user(),
+                $request->user_id,
+                $request->ean,
+                $request->descricao,
+                $request->area_auditoria_id
             ),
             "coletas.xlsx"
         );
@@ -113,7 +117,11 @@ class ColetaController extends Controller
                 $request->dias,
                 $request->data_inicio,
                 $request->data_fim,
-                auth()->user()
+                auth()->user(),
+                $request->user_id,
+                $request->ean,
+                $request->descricao,
+                $request->area_auditoria_id
             ),
             "coletas.csv"
         );
@@ -132,14 +140,14 @@ class ColetaController extends Controller
             abort(403, 'Você não tem acesso a esta loja.');
         }
 
+        $returnUrl = request('return_url', route("admin.coletas.index"));
+
         $coleta->load("loja", "areaAuditoria");
         $lojas = $this->lojasDisponiveis();
-        $areasAuditoria = AreaAuditoria::whereHas('lojas', function ($q) use ($coleta) {
-                $q->where('lojas.id', $coleta->loja_id);
-            })
-            ->orderBy("nome")
-            ->get();
-        return view("admin.coletas.edit", compact("coleta", "lojas", "areasAuditoria"));
+    $areasAuditoria = AreaAuditoria::where("loja_id", $coleta->loja_id)
+        ->orderBy("nome")
+        ->get();
+        return view("admin.coletas.edit", compact("coleta", "lojas", "areasAuditoria", "returnUrl"));
     }
 
     public function update(Request $request, Coleta $coleta)
@@ -166,10 +174,12 @@ class ColetaController extends Controller
 
         AuditLog::log("Editou coleta #$coleta->id - EAN: $coleta->ean", "coleta", $coleta->id);
 
-        return redirect()->route("admin.coletas.index")->with("success", "Coleta atualizada com sucesso!");
+        $returnUrl = $request->return_url ?? route("admin.coletas.index");
+
+        return redirect($returnUrl)->with("success", "Coleta atualizada com sucesso!");
     }
 
-    public function destroy(Coleta $coleta)
+    public function destroy(Request $request, Coleta $coleta)
     {
         $user = auth()->user();
 
@@ -182,12 +192,14 @@ class ColetaController extends Controller
             abort(403, 'Você não tem acesso a esta loja.');
         }
 
+        $returnUrl = $request->return_url ?? route("admin.coletas.index");
+
         $id = $coleta->id;
         $coleta->delete();
 
         AuditLog::log("Excluiu coleta #$id", "coleta", $id);
 
-        return redirect()->route("admin.coletas.index")->with("success", "Coleta excluída com sucesso!");
+        return redirect($returnUrl)->with("success", "Coleta excluída com sucesso!");
     }
 
     public function trashed()

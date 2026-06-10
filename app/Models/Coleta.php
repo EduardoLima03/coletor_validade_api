@@ -36,6 +36,9 @@ class Coleta extends Model
 
     public function getDiasAVencerAttribute()
     {
+        if (!$this->data_validade) {
+            return null;
+        }
         return now()->diffInDays($this->data_validade, false);
     }
 }

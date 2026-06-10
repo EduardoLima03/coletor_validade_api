@@ -49,12 +49,19 @@
                 <tbody>
                     @forelse ($areas as $area)
                         <tr>
-                            <td>{{ $area->lojas->pluck("nome")->implode(", ") ?: "---" }}</td>
+                            <td>{{ $area->loja->nome ?? "---" }}</td>
                             <td>{{ $area->nome }}</td>
                             <td>{{ $area->descricao ?? '---' }}</td>
                             <td>{{ $area->created_at->format("d/m/Y H:i") }}</td>
                             <td class="text-center">
-                                <a href="{{ route("admin.areas-auditoria.edit", $area->id) }}"
+                                @php
+                                    $queryStr = http_build_query(request()->query());
+                                    $editUrl = route("admin.areas-auditoria.edit", $area->id);
+                                    if ($queryStr) {
+                                        $editUrl .= "?" . $queryStr;
+                                    }
+                                @endphp
+                                <a href="{{ $editUrl }}"
                                    class="btn btn-sm btn-outline-primary" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
@@ -63,6 +70,7 @@
                                       class="d-inline"
                                       onsubmit="return confirm('Tem certeza que deseja excluir esta área?')">
                                     @csrf
+                                    <input type="hidden" name="return_url" value="{{ url()->full() }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir">
                                         <i class="bi bi-trash"></i>
                                     </button>

@@ -151,7 +151,14 @@
                             @if ($podeEditar || $podeExcluir)
                             <td class="text-center">
                                 @if ($podeEditar)
-                                <a href="{{ route("admin.coletas.edit", $coleta->id) }}"
+                                @php
+                                    $queryStr = http_build_query(request()->query());
+                                    $editUrl = route("admin.coletas.edit", $coleta->id);
+                                    if ($queryStr) {
+                                        $editUrl .= '?' . $queryStr;
+                                    }
+                                @endphp
+                                <a href="{{ $editUrl }}"
                                    class="btn btn-sm btn-outline-primary" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
@@ -163,6 +170,7 @@
                                       onsubmit="return confirm(\"Tem certeza que deseja excluir esta coleta?\")">
                                     @csrf
                                     @method("DELETE")
+                                    <input type="hidden" name="return_url" value="{{ url()->full() }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir">
                                         <i class="bi bi-trash"></i>
                                     </button>

@@ -5,7 +5,7 @@
 @section("content")
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0"><i class="bi bi-pencil"></i> Editar Área de Auditoria</h4>
-    <a href="{{ route("admin.areas-auditoria.index") }}" class="btn btn-outline-secondary">
+    <a href="{{ $returnUrl }}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left"></i> Voltar
     </a>
 </div>
@@ -15,27 +15,21 @@
         <form action="{{ route("admin.areas-auditoria.update", $areaAuditorium->id) }}" method="POST">
             @csrf
             @method("PUT")
+            <input type="hidden" name="return_url" value="{{ $returnUrl }}">
             <div class="mb-3">
-                <label class="form-label">Lojas vinculadas</label>
-                <div class="row g-2 @error("loja_ids") is-invalid @enderror">
+                <label for="loja_id" class="form-label">Loja</label>
+                <select class="form-select @error("loja_id") is-invalid @enderror"
+                        id="loja_id"
+                        name="loja_id"
+                        required>
+                    <option value="">Selecione...</option>
                     @foreach ($lojas as $loja)
-                        <div class="col-md-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox"
-                                       name="loja_ids[]" value="{{ $loja->id }}"
-                                       id="loja_{{ $loja->id }}"
-                                       {{ in_array($loja->id, old("loja_ids", $areaAuditorium->lojas->pluck("id")->toArray())) ? "checked" : "" }}>
-                                <label class="form-check-label" for="loja_{{ $loja->id }}">
-                                    {{ $loja->nome }}
-                                </label>
-                            </div>
-                        </div>
+                        <option value="{{ $loja->id }}" {{ old("loja_id", $areaAuditorium->loja_id) == $loja->id ? "selected" : "" }}>
+                            {{ $loja->nome }}
+                        </option>
                     @endforeach
-                </div>
-                @error("loja_ids")
-                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                @enderror
-                @error("loja_ids.*")
+                </select>
+                @error("loja_id")
                     <div class="invalid-feedback d-block">{{ $message }}</div>
                 @enderror
             </div>
@@ -64,7 +58,7 @@
             <button type="submit" class="btn btn-primary">
                 <i class="bi bi-check-lg"></i> Atualizar
             </button>
-            <a href="{{ route("admin.areas-auditoria.index") }}" class="btn btn-outline-secondary">Cancelar</a>
+            <a href="{{ $returnUrl }}" class="btn btn-outline-secondary">Cancelar</a>
         </form>
     </div>
 </div>

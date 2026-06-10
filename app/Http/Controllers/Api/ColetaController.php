@@ -38,9 +38,11 @@ class ColetaController extends Controller
         $descricao = $validated["descricao"] ?? $this->buscarDescricao($validated["ean"]);
         $action = $validated["action"] ?? null;
 
+        $areaAuditoriaId = $validated["area_auditoria_id"] ?? null;
+
         $existing = Coleta::withTrashed()
             ->where("loja_id", $validated["loja_id"])
-            ->where("area_auditoria_id", $validated["area_auditoria_id"])
+            ->where("area_auditoria_id", $areaAuditoriaId)
             ->where("ean", $validated["ean"])
             ->where("data_validade", $validated["validade"])
             ->first();
@@ -52,7 +54,7 @@ class ColetaController extends Controller
             ], 409);
         }
 
-        $coleta = DB::transaction(function () use ($validated, $descricao, $action, $existing) {
+        $coleta = DB::transaction(function () use ($validated, $descricao, $action, $existing, $areaAuditoriaId) {
             if ($action === "replace" && $existing) {
                 $oldQty = $existing->quantidade;
 
@@ -92,6 +94,19 @@ class ColetaController extends Controller
             }
 
             if ($action === "add" && $existing) {
+                if ($validated["quantidade"] == "0" || $validated["quantidade"] === "0") {
+                    $existing->delete();
+                    $lojaNome = $this->lojaNome($validated['loja_id']);
+                    AuditLog::log(
+                        "coleta.add",
+                        "Coleta",
+                        $existing->id,
+                        "Removeu coleta ID {$existing->id} (qty 0): EAN {$validated['ean']}, "
+                        . "loja {$lojaNome}"
+                    );
+                    return $existing->fresh()->load("loja", "user", "areaAuditoria");
+                }
+
                 if ($existing->trashed()) {
                     $existing->restore();
                     $existing->update([
@@ -125,7 +140,7 @@ class ColetaController extends Controller
 
             $nova = Coleta::create([
                 "loja_id" => $validated["loja_id"],
-                "area_auditoria_id" => $validated["area_auditoria_id"],
+                "area_auditoria_id" => $areaAuditoriaId,
                 "user_id" => auth()->id(),
                 "descricao" => $descricao,
                 "ean" => $validated["ean"],
@@ -203,9 +218,11 @@ class ColetaController extends Controller
             "validade" => "required|date",
         ]);
 
+        $areaAuditoriaId = $validated["area_auditoria_id"] ?? null;
+
         $existing = Coleta::withTrashed()
             ->where("loja_id", $validated["loja_id"])
-            ->where("area_auditoria_id", $validated["area_auditoria_id"])
+            ->where("area_auditoria_id", $areaAuditoriaId)
             ->where("ean", $validated["ean"])
             ->where("data_validade", $validated["validade"])
             ->first();

@@ -15,26 +15,19 @@
         <form action="{{ route("admin.areas-auditoria.store") }}" method="POST">
             @csrf
             <div class="mb-3">
-                <label class="form-label">Lojas vinculadas</label>
-                <div class="row g-2 @error("loja_ids") is-invalid @enderror">
+                <label for="loja_id" class="form-label">Loja</label>
+                <select class="form-select @error("loja_id") is-invalid @enderror"
+                        id="loja_id"
+                        name="loja_id"
+                        required>
+                    <option value="">Selecione...</option>
                     @foreach ($lojas as $loja)
-                        <div class="col-md-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox"
-                                       name="loja_ids[]" value="{{ $loja->id }}"
-                                       id="loja_{{ $loja->id }}"
-                                       {{ in_array($loja->id, old("loja_ids", [])) ? "checked" : "" }}>
-                                <label class="form-check-label" for="loja_{{ $loja->id }}">
-                                    {{ $loja->nome }}
-                                </label>
-                            </div>
-                        </div>
+                        <option value="{{ $loja->id }}" {{ old("loja_id") == $loja->id ? "selected" : "" }}>
+                            {{ $loja->nome }}
+                        </option>
                     @endforeach
-                </div>
-                @error("loja_ids")
-                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                @enderror
-                @error("loja_ids.*")
+                </select>
+                @error("loja_id")
                     <div class="invalid-feedback d-block">{{ $message }}</div>
                 @enderror
             </div>

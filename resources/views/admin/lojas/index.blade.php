@@ -29,7 +29,14 @@
                             <td>{{ $loja->coletas()->count() }}</td>
                             <td>{{ $loja->created_at->format("d/m/Y H:i") }}</td>
                             <td class="text-center">
-                                <a href="{{ route("admin.lojas.edit", $loja->id) }}"
+                                @php
+                                    $queryStr = http_build_query(request()->query());
+                                    $editUrl = route("admin.lojas.edit", $loja->id);
+                                    if ($queryStr) {
+                                        $editUrl .= "?" . $queryStr;
+                                    }
+                                @endphp
+                                <a href="{{ $editUrl }}"
                                    class="btn btn-sm btn-outline-primary" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
@@ -39,6 +46,7 @@
                                       onsubmit="return confirm(\"Tem certeza que deseja excluir?\")">
                                     @csrf
                                     @method("DELETE")
+                                    <input type="hidden" name="return_url" value="{{ url()->full() }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir">
                                         <i class="bi bi-trash"></i>
                                     </button>
