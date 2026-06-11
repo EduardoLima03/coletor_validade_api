@@ -10,6 +10,11 @@ use Illuminate\Http\Request;
 
 class AreaAuditoriaController extends Controller
 {
+    public function show($id)
+    {
+        return redirect()->route('admin.areas-auditoria.index');
+    }
+
     public function index(Request $request)
     {
         $query = AreaAuditoria::with('loja');

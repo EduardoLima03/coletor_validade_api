@@ -10,6 +10,11 @@ use Illuminate\Validation\Rule;
 
 class LojaController extends Controller
 {
+    public function show($id)
+    {
+        return redirect()->route('admin.lojas.index');
+    }
+
     public function index()
     {
         $lojas = Loja::orderBy("nome")->paginate(20)->withQueryString();
