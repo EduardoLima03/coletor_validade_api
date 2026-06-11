@@ -1,0 +1,50 @@
+services:
+  app:
+    image: datacheck:1.0
+    container_name: datacheck-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-9001}:80"
+    environment:
+      TZ: America/Fortaleza
+      APP_ENV: production
+      APP_DEBUG: false
+      APP_URL: http://localhost:${APP_PORT:-9001}
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_NAME:-datacheck}
+      DB_USERNAME: ${DB_USER:-datacheck}
+      DB_PASSWORD: ${DB_PASS:-senha_forte}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - datacheck-net
+
+  db:
+    image: mysql:8.0
+    container_name: datacheck-db
+    restart: unless-stopped
+    environment:
+      TZ: America/Fortaleza
+      MYSQL_DATABASE: ${DB_NAME:-datacheck}
+      MYSQL_USER: ${DB_USER:-datacheck}
+      MYSQL_PASSWORD: ${DB_PASS:-senha_forte}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:-senha_root_forte}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u${DB_USER:-datacheck}", "-p${DB_PASS:-senha_forte}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - datacheck-net
+
+volumes:
+  mysql_data:
+
+networks:
+  datacheck-net:
+    driver: bridge

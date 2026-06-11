@@ -47,13 +47,15 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
 
     Route::middleware('role:ADMIN')->group(function () {
         Route::resource('produtos', App\Http\Controllers\Web\ProductController::class)
+            ->except(['show'])
             ->names(['index' => 'products.index', 'create' => 'products.create', 'store' => 'products.store',
-                     'show' => 'products.show', 'edit' => 'products.edit', 'update' => 'products.update',
+                     'edit' => 'products.edit', 'update' => 'products.update',
                      'destroy' => 'products.destroy']);
 
         Route::resource('barcodes', App\Http\Controllers\Web\BarcodeController::class)
+            ->except(['show'])
             ->names(['index' => 'barcodes.index', 'create' => 'barcodes.create', 'store' => 'barcodes.store',
-                     'show' => 'barcodes.show', 'edit' => 'barcodes.edit', 'update' => 'barcodes.update',
+                     'edit' => 'barcodes.edit', 'update' => 'barcodes.update',
                      'destroy' => 'barcodes.destroy']);
 
         Route::get('/importar', [App\Http\Controllers\Web\ImportController::class, 'showForm'])
@@ -68,16 +70,19 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
             ->name('import.progress');
 
         Route::resource('lojas', App\Http\Controllers\Web\LojaController::class)
+            ->except(['show'])
             ->names(['index' => 'lojas.index', 'create' => 'lojas.create', 'store' => 'lojas.store',
                      'edit' => 'lojas.edit', 'update' => 'lojas.update',
                      'destroy' => 'lojas.destroy']);
 
         Route::resource('users', App\Http\Controllers\Web\UserController::class)
+            ->except(['show'])
             ->names(['index' => 'users.index', 'create' => 'users.create', 'store' => 'users.store',
-                     'show' => 'users.show', 'edit' => 'users.edit', 'update' => 'users.update',
+                     'edit' => 'users.edit', 'update' => 'users.update',
                      'destroy' => 'users.destroy']);
 
         Route::resource('areas-auditoria', App\Http\Controllers\Web\AreaAuditoriaController::class)
+            ->except(['show'])
             ->parameters(['areas-auditoria' => 'area_auditorium'])
             ->names(['index' => 'areas-auditoria.index', 'create' => 'areas-auditoria.create',
                      'store' => 'areas-auditoria.store', 'edit' => 'areas-auditoria.edit',
