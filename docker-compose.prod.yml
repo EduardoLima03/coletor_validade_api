@@ -1,6 +1,7 @@
 services:
   app:
-    image: datacheck:1.0
+    image: datacheck:${APP_VERSION:-1.0}
+    build: .
     container_name: datacheck-app
     restart: unless-stopped
     ports:
