@@ -5,9 +5,18 @@
 @section("content")
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0"><i class="bi bi-clipboard-check"></i> Áreas de Auditoria</h4>
-    <a href="{{ route("admin.areas-auditoria.create") }}" class="btn btn-success">
-        <i class="bi bi-plus-lg"></i> Nova Área
-    </a>
+    <div>
+        <form action="{{ route("admin.areas-auditoria.merge") }}" method="POST" class="d-inline"
+              onsubmit="return confirm('Mesclar áreas com o mesmo nome em um único cadastro? As coletas serão atualizadas automaticamente.')">
+            @csrf
+            <button type="submit" class="btn btn-warning me-2">
+                <i class="bi bi-merge"></i> Mesclar Duplicadas
+            </button>
+        </form>
+        <a href="{{ route("admin.areas-auditoria.create") }}" class="btn btn-success">
+            <i class="bi bi-plus-lg"></i> Nova Área
+        </a>
+    </div>
 </div>
 
 <div class="card mb-3">
@@ -39,7 +48,7 @@
             <table class="table table-hover mb-0">
                 <thead class="table-dark">
                     <tr>
-                        <th>Loja</th>
+                        <th>Lojas</th>
                         <th>Nome</th>
                         <th>Descrição</th>
                         <th>Criado em</th>
@@ -49,7 +58,11 @@
                 <tbody>
                     @forelse ($areas as $area)
                         <tr>
-                            <td>{{ $area->loja->nome ?? "---" }}</td>
+                            <td>
+                                @foreach ($area->lojas as $loja)
+                                    <span class="badge bg-secondary me-1">{{ $loja->nome }}</span>
+                                @endforeach
+                            </td>
                             <td>{{ $area->nome }}</td>
                             <td>{{ $area->descricao ?? '---' }}</td>
                             <td>{{ $area->created_at->format("d/m/Y H:i") }}</td>

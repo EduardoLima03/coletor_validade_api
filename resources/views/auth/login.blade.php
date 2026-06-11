@@ -113,7 +113,7 @@
                     </div>
                 </div>
                 <div class="footer-dc">
-                    Datacheck - Medeiros v1.0.0 &mdash;
+                    Datacheck - Medeiros v{{ config('app.version') }} &mdash;
                     Desenvolvido por
                     <a href="https://github.com/EduardoLima03" target="_blank" rel="noopener">
                         CL Dev <i class="bi bi-box-arrow-up-right"></i>

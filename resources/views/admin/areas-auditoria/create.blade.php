@@ -15,19 +15,28 @@
         <form action="{{ route("admin.areas-auditoria.store") }}" method="POST">
             @csrf
             <div class="mb-3">
-                <label for="loja_id" class="form-label">Loja</label>
-                <select class="form-select @error("loja_id") is-invalid @enderror"
-                        id="loja_id"
-                        name="loja_id"
-                        required>
-                    <option value="">Selecione...</option>
+                <label class="form-label">Lojas</label>
+                <div class="row">
                     @foreach ($lojas as $loja)
-                        <option value="{{ $loja->id }}" {{ old("loja_id") == $loja->id ? "selected" : "" }}>
-                            {{ $loja->nome }}
-                        </option>
+                        <div class="col-md-4 col-lg-3 mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input @error("loja_ids") is-invalid @enderror"
+                                       type="checkbox"
+                                       name="loja_ids[]"
+                                       value="{{ $loja->id }}"
+                                       id="loja_{{ $loja->id }}"
+                                       {{ old("loja_ids") && in_array($loja->id, old("loja_ids")) ? "checked" : "" }}>
+                                <label class="form-check-label" for="loja_{{ $loja->id }}">
+                                    {{ $loja->nome }}
+                                </label>
+                            </div>
+                        </div>
                     @endforeach
-                </select>
-                @error("loja_id")
+                </div>
+                @error("loja_ids")
+                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                @enderror
+                @error("loja_ids.*")
                     <div class="invalid-feedback d-block">{{ $message }}</div>
                 @enderror
             </div>
