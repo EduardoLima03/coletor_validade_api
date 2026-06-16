@@ -10,56 +10,23 @@
     </a>
 </div>
 
-@if (session("success"))
-    <div class="alert alert-success alert-dismissible fade show">
-        {!! session("success") !!}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-
-@if (session("warning"))
-    <div class="alert alert-warning alert-dismissible fade show">
-        {!! session("warning") !!}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-
-@if (session("error"))
-    <div class="alert alert-danger alert-dismissible fade show">
-        {!! session("error") !!}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-
-@if ($errors->any())
-    <div class="alert alert-danger alert-dismissible fade show">
-        <ul class="mb-0">
-            @foreach ($errors->all() as $erro)
-                <li>{{ $erro }}</li>
-            @endforeach
-        </ul>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-
 <div class="row">
     <div class="col-md-7">
         <div class="card">
             <div class="card-header"><strong>Importar CSV de Coletas</strong></div>
             <div class="card-body">
-                <form method="POST" action="{{ route("admin.importar.coletas.processar") }}"
-                      enctype="multipart/form-data">
+                <form id="import-form">
                     @csrf
 
                     <div class="mb-3">
-                        <label for="arquivo" class="form-label">Arquivo CSV</label>
+                        <label for="csv_file" class="form-label">Arquivo CSV</label>
                         <input type="file"
-                               class="form-control @error("arquivo") is-invalid @enderror"
-                               id="arquivo"
-                               name="arquivo"
+                               class="form-control @error("csv_file") is-invalid @enderror"
+                               id="csv_file"
+                               name="csv_file"
                                accept=".csv,.txt"
                                required>
-                        @error("arquivo")
+                        @error("csv_file")
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                         <div class="form-text">Máximo 100 MB. Formatos aceitos: CSV, TXT.</div>
@@ -81,8 +48,7 @@
                         @enderror
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-lg" id="btnImportar"
-                            onclick="this.disabled=true; this.innerHTML='<span class=\'spinner-border spinner-border-sm\'></span> Importando...'; this.form.submit();">
+                    <button type="button" class="btn btn-primary btn-lg" id="btnImportar" onclick="startImport()">
                         <i class="bi bi-play-fill"></i> Importar
                     </button>
                 </form>
@@ -129,4 +95,207 @@
         </div>
     </div>
 </div>
+
+<div id="import-overlay" class="import-overlay d-none">
+    <div class="import-overlay-content">
+        <div class="mb-3">
+            <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Processando...</span>
+            </div>
+        </div>
+        <h4 class="text-light mb-2" id="overlay-title">Importando...</h4>
+        <p class="text-light mb-2" id="overlay-status">Iniciando processamento...</p>
+        <div class="progress w-75 mx-auto mb-2" style="height: 20px;">
+            <div id="overlay-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                 role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                0%
+            </div>
+        </div>
+        <p class="text-light small mb-0" id="overlay-detail"></p>
+        <p class="text-light small mt-2">
+            <i class="bi bi-exclamation-triangle"></i> Não saia desta página até a conclusão.
+        </p>
+    </div>
+</div>
+
+<div id="result-modal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" id="result-header">
+                <h5 class="modal-title" id="result-title">Resultado</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="result-body">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@push('styles')
+<style>
+.import-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.import-overlay-content {
+    text-align: center;
+    width: 100%;
+    max-width: 500px;
+}
+</style>
+@endpush
+
+@push('scripts')
+<script>
+let importRunning = false;
+let importTotal = 0;
+
+function startImport() {
+    if (importRunning) return;
+
+    var form = document.getElementById('import-form');
+    var formData = new FormData(form);
+
+    if (!formData.get('csv_file').name) {
+        alert('Selecione um arquivo CSV.');
+        return;
+    }
+    if (!formData.get('loja_id')) {
+        alert('Selecione a loja destino.');
+        return;
+    }
+
+    importRunning = true;
+    document.getElementById('import-overlay').classList.remove('d-none');
+    updateProgress(0, 'Iniciando...');
+    showDetail('');
+
+    formData.append('_token', document.querySelector('input[name="_token"]').value);
+    fetch('{{ route("admin.importar.coletas.start") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+        if (data.error) { showError(data.error); return; }
+        importTotal = data.total;
+        processChunks();
+    })
+    .catch(function () { showError('Erro ao iniciar importação.'); });
+}
+
+function processChunks() {
+    if (!importRunning) return;
+
+    fetch('{{ route("admin.importar.coletas.chunk") }}', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+        if (data.error) { showError(data.error); return; }
+
+        var p = data.progress;
+
+        updateProgress(p.percent, 'Processando... (' + p.processed + ' de ' + p.total + ')');
+        showDetail(
+            'Importadas: ' + p.importadas +
+            ' | Areas criadas: ' + p.areas_criadas +
+            (p.erros > 0 ? ' | Erros: ' + p.erros : '')
+        );
+
+        if (data.done) {
+            importRunning = false;
+            document.getElementById('import-overlay').classList.add('d-none');
+            showResult(p);
+        } else {
+            setTimeout(processChunks, 100);
+        }
+    })
+    .catch(function () { showError('Erro ao processar lote.'); });
+}
+
+function updateProgress(percent, status) {
+    var bar = document.getElementById('overlay-bar');
+    bar.style.width = percent + '%';
+    bar.setAttribute('aria-valuenow', percent);
+    bar.textContent = percent + '%';
+    if (percent >= 100) {
+        bar.classList.remove('bg-success');
+        bar.classList.add('bg-warning');
+    }
+    document.getElementById('overlay-status').textContent = status;
+}
+
+function showDetail(text) {
+    document.getElementById('overlay-detail').textContent = text;
+}
+
+function showResult(p) {
+    var title = document.getElementById('result-title');
+    var header = document.getElementById('result-header');
+    var body = document.getElementById('result-body');
+
+    if (p.erros > 0) {
+        header.className = 'modal-header text-bg-warning';
+        title.textContent = 'Importação concluída com erros';
+    } else {
+        header.className = 'modal-header text-bg-success';
+        title.textContent = 'Importação concluída com sucesso';
+    }
+
+    body.innerHTML =
+        '<p>' + p.message + '</p>' +
+        '<table class="table table-sm table-bordered mb-0">' +
+        '<tr><td>Total de linhas</td><td><strong>' + p.total + '</strong></td></tr>' +
+        '<tr><td>Processadas</td><td><strong>' + p.processed + '</strong></td></tr>' +
+        '<tr><td>Importadas/atualizadas</td><td><strong>' + p.importadas + '</strong></td></tr>' +
+        '<tr><td>Puladas</td><td><strong>' + p.puladas + '</strong></td></tr>' +
+        '<tr><td>Áreas criadas</td><td><strong>' + p.areas_criadas + '</strong></td></tr>' +
+        (p.erros > 0 ? '<tr><td>Erros</td><td><strong class="text-danger">' + p.erros + '</strong></td></tr>' : '') +
+        '</table>';
+
+    var modal = new bootstrap.Modal(document.getElementById('result-modal'));
+    modal.show();
+}
+
+function showError(msg) {
+    importRunning = false;
+    document.getElementById('import-overlay').classList.add('d-none');
+
+    var title = document.getElementById('result-title');
+    var header = document.getElementById('result-header');
+    var body = document.getElementById('result-body');
+
+    header.className = 'modal-header text-bg-danger';
+    title.textContent = 'Erro na importação';
+    body.innerHTML = '<p class="mb-0">' + msg + '</p>';
+
+    var modal = new bootstrap.Modal(document.getElementById('result-modal'));
+    modal.show();
+}
+
+window.addEventListener('beforeunload', function (e) {
+    if (importRunning) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+</script>
+@endpush
 @endsection

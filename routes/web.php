@@ -91,6 +91,12 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
             ->name('importar.coletas.form');
         Route::post('/importar/coletas/processar', [App\Http\Controllers\Web\ColetaImportController::class, 'import'])
             ->name('importar.coletas.processar');
+        Route::post('/importar/coletas/iniciar', [App\Http\Controllers\Web\ColetaImportController::class, 'start'])
+            ->name('importar.coletas.start');
+        Route::post('/importar/coletas/processar-lote', [App\Http\Controllers\Web\ColetaImportController::class, 'chunk'])
+            ->name('importar.coletas.chunk');
+        Route::get('/importar/coletas/progresso', [App\Http\Controllers\Web\ColetaImportController::class, 'progress'])
+            ->name('importar.coletas.progress');
 
         Route::get('/auditoria', [App\Http\Controllers\Web\AuditController::class, 'index'])
             ->name('audit.index');

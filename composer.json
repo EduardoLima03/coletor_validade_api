@@ -38,6 +38,9 @@
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
         ],
+        "serve": [
+            "@php -d upload_max_filesize=128M -d post_max_size=128M artisan serve"
+        ],
         "post-update-cmd": [],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
