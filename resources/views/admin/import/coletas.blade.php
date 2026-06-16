@@ -161,6 +161,16 @@
 let importRunning = false;
 let importTotal = 0;
 
+function extractError(d) {
+    if (d && d.error) return d.error;
+    if (d && d.message) return d.message;
+    if (d && d.errors) {
+        var keys = Object.keys(d.errors);
+        if (keys.length > 0) return d.errors[keys[0]][0];
+    }
+    return 'Erro desconhecido';
+}
+
 function startImport() {
     if (importRunning) return;
 
@@ -184,15 +194,19 @@ function startImport() {
     formData.append('_token', document.querySelector('input[name="_token"]').value);
     fetch('{{ route("admin.importar.coletas.start") }}', {
         method: 'POST',
+        headers: { 'Accept': 'application/json' },
         body: formData
     })
-    .then(function (r) { return r.json(); })
+    .then(function (r) {
+        if (!r.ok) { return r.json().then(function (d) { throw new Error(extractError(d)); }); }
+        return r.json();
+    })
     .then(function (data) {
         if (data.error) { showError(data.error); return; }
         importTotal = data.total;
         processChunks();
     })
-    .catch(function () { showError('Erro ao iniciar importação.'); });
+    .catch(function (e) { showError(e.message || 'Erro ao iniciar importação.'); });
 }
 
 function processChunks() {
@@ -206,7 +220,10 @@ function processChunks() {
             'Accept': 'application/json'
         }
     })
-    .then(function (r) { return r.json(); })
+    .then(function (r) {
+        if (!r.ok) { return r.json().then(function (d) { throw new Error(extractError(d)); }); }
+        return r.json();
+    })
     .then(function (data) {
         if (data.error) { showError(data.error); return; }
 
@@ -227,7 +244,7 @@ function processChunks() {
             setTimeout(processChunks, 100);
         }
     })
-    .catch(function () { showError('Erro ao processar lote.'); });
+    .catch(function (e) { showError(e.message || 'Erro ao processar lote.'); });
 }
 
 function updateProgress(percent, status) {
