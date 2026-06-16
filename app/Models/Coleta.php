@@ -19,6 +19,8 @@ class Coleta extends Model
         "deleted_at" => "datetime",
     ];
 
+    protected $appends = ["product_name"];
+
     public function loja()
     {
         return $this->belongsTo(Loja::class);
@@ -32,6 +34,16 @@ class Coleta extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function barcode()
+    {
+        return $this->belongsTo(Barcode::class, "ean", "ean");
+    }
+
+    public function getProductNameAttribute(): ?string
+    {
+        return $this->barcode?->product?->description ?? $this->descricao;
     }
 
     public function getDiasAVencerAttribute()

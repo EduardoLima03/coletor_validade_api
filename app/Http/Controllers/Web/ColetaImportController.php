@@ -57,6 +57,10 @@ class ColetaImportController extends Controller
             while (($row = fgetcsv($handle, 0, ',', '"')) !== false) {
                 $stats['total']++;
 
+                if ($stats['total'] % 500 === 0) {
+                    DB::reconnect();
+                }
+
                 if (count($row) < 7 || empty(trim($row[4] ?? ''))) {
                     $stats['puladas']++;
                     continue;
@@ -67,15 +71,17 @@ class ColetaImportController extends Controller
                     $areaAuditoria = null;
 
                     if (!empty($setorNome)) {
-                        $areaAuditoria = AreaAuditoria::where('loja_id', $loja->id)
+                        $areaAuditoria = AreaAuditoria::whereHas('lojas', function ($q) use ($loja) {
+                                $q->where('lojas.id', $loja->id);
+                            })
                             ->whereRaw('LOWER(nome) = ?', [mb_strtolower($setorNome)])
                             ->first();
 
                         if (!$areaAuditoria) {
                             $areaAuditoria = AreaAuditoria::create([
-                                'loja_id' => $loja->id,
                                 'nome' => $setorNome,
                             ]);
+                            $areaAuditoria->lojas()->attach($loja->id);
                             $stats['areas_criadas']++;
                         }
                     }
@@ -95,7 +101,9 @@ class ColetaImportController extends Controller
                     }
 
                     $ean = trim($row[4] ?? '');
-                    $descricao = trim($row[3] ?? 'Produto não encontrado');
+                    $csvDescricao = trim($row[3] ?? '');
+                    $barcode = \App\Models\Barcode::where('ean', $ean)->with('product')->first();
+                    $descricao = $barcode?->product?->description ?? ($csvDescricao ?: 'Produto não encontrado');
 
                     $coleta = Coleta::where('loja_id', $loja->id)
                         ->where('area_auditoria_id', $areaAuditoria?->id)
@@ -162,18 +170,25 @@ class ColetaImportController extends Controller
                 }
             }
 
+            $descLog = "Importação concluída. Total: {$stats['total']}, Importadas: {$stats['importadas']}, Puladas: {$stats['puladas']}, Áreas: {$stats['areas_criadas']}";
+            if ($stats['erros'] > 0) {
+                $descLog .= ", Erros: {$stats['erros']}";
+                $primeirosErros = array_slice($errosDetalhados, 0, 10);
+                $descLog .= " | " . implode(" | ", $primeirosErros);
+            }
+
             AuditLog::log(
-                "Importou coletas do arquivo {$validated['arquivo']->getClientOriginalName()} para loja {$loja->nome}",
+                "Importou coletas: {$validated['arquivo']->getClientOriginalName()}",
                 'import',
                 null,
-                strip_tags($mensagem)
+                $descLog
             );
 
             $type = !empty($errosDetalhados) ? 'warning' : 'success';
             fclose($handle);
             return back()->with($type, $mensagem);
         } catch (\Exception $e) {
-            DB::rollBack();
+            try { DB::rollBack(); } catch (\Exception $ignored) {}
             if (is_resource($handle)) {
                 fclose($handle);
             }

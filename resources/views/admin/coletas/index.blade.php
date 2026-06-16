@@ -130,7 +130,7 @@
                             <td>{{ $coleta->loja->nome ?? "-" }}</td>
                             <td>{{ $coleta->user->name ?? "-" }}</td>
                             <td>{{ $coleta->areaAuditoria->nome ?? "-" }}</td>
-                            <td>{{ Str::limit($coleta->descricao, 40) }}</td>
+                            <td>{{ Str::limit($coleta->productName, 40) }}</td>
                             <td>{{ $coleta->ean }}</td>
                             <td>{{ $coleta->quantidade }}</td>
                             <td>{{ $coleta->unidade ?? "un" }}</td>

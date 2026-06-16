@@ -43,7 +43,7 @@ class ColetasExport implements FromQuery, WithHeadings, WithMapping, WithStyles
 
     public function query()
     {
-        $query = Coleta::with("loja", "user", "areaAuditoria");
+        $query = Coleta::with("loja", "user", "areaAuditoria", "barcode.product");
 
         if ($this->user && $this->user->position !== 'ADMIN') {
             $lojaIds = $this->user->lojasAcessoIds();
@@ -120,7 +120,7 @@ class ColetasExport implements FromQuery, WithHeadings, WithMapping, WithStyles
             $coleta->loja->nome ?? "-",
             $coleta->user->name ?? "-",
             $coleta->areaAuditoria->nome ?? "-",
-            $coleta->descricao,
+            $coleta->productName,
             $coleta->ean,
             $coleta->quantidade,
             $coleta->unidade ?? "un",

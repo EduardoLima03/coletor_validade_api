@@ -71,7 +71,7 @@ class DashboardController extends Controller
             ->get();
 
         $ultimasColetas = (clone $query)
-            ->with("loja", "user", "areaAuditoria")
+            ->with("loja", "user", "areaAuditoria", "barcode.product")
             ->orderByDesc("id")
             ->limit(10)
             ->get();

@@ -50,7 +50,7 @@ class ColetaController extends Controller
         if (!$action && $existing) {
             return response()->json([
                 "message" => "Já existe uma coleta com este EAN, área, loja e validade.",
-                "existing" => $existing->load("loja", "user", "areaAuditoria"),
+                "existing" => $existing->load("loja", "user", "areaAuditoria", "barcode.product"),
             ], 409);
         }
 
@@ -68,7 +68,7 @@ class ColetaController extends Controller
                         "Removeu coleta ID {$existing->id} (qty 0): EAN {$validated['ean']}, "
                         . "loja {$lojaNome}, quantidade {$oldQty} → 0"
                     );
-                    return $existing->fresh()->load("loja", "user", "areaAuditoria");
+                    return $existing->fresh()->load("loja", "user", "areaAuditoria", "barcode.product");
                 }
 
                 if ($existing->trashed()) {
@@ -90,7 +90,7 @@ class ColetaController extends Controller
                     . "quantidade {$oldQty} → {$validated['quantidade']}, validade {$validated['validade']}"
                 );
 
-                return $existing->fresh()->load("loja", "user", "areaAuditoria");
+                return $existing->fresh()->load("loja", "user", "areaAuditoria", "barcode.product");
             }
 
             if ($action === "add" && $existing) {
@@ -104,7 +104,7 @@ class ColetaController extends Controller
                         "Removeu coleta ID {$existing->id} (qty 0): EAN {$validated['ean']}, "
                         . "loja {$lojaNome}"
                     );
-                    return $existing->fresh()->load("loja", "user", "areaAuditoria");
+                    return $existing->fresh()->load("loja", "user", "areaAuditoria", "barcode.product");
                 }
 
                 if ($existing->trashed()) {
@@ -163,7 +163,7 @@ class ColetaController extends Controller
         });
 
         $statusCode = $action ? 200 : 201;
-        return response()->json($coleta->load("loja", "user", "areaAuditoria"), $statusCode);
+        return response()->json($coleta->load("loja", "user", "areaAuditoria", "barcode.product"), $statusCode);
     }
 
     public function update(Request $request, $id)
@@ -206,7 +206,7 @@ class ColetaController extends Controller
             . "quantidade {$oldQty} → {$validated['quantidade']}, validade {$validated['validade']}"
         );
 
-        return response()->json($coleta->load("loja", "user", "areaAuditoria"));
+        return response()->json($coleta->load("loja", "user", "areaAuditoria", "barcode.product"));
     }
 
     public function check(Request $request)
@@ -230,14 +230,14 @@ class ColetaController extends Controller
         return response()->json([
             "exists" => $existing !== null,
             "trashed" => $existing ? $existing->trashed() : false,
-            "coleta" => $existing ? $existing->load("loja", "user", "areaAuditoria") : null,
+            "coleta" => $existing ? $existing->load("loja", "user", "areaAuditoria", "barcode.product") : null,
         ]);
     }
 
     public function trashed()
     {
         $coletas = Coleta::onlyTrashed()
-            ->with("loja", "areaAuditoria", "user")
+            ->with("loja", "areaAuditoria", "user", "barcode.product")
             ->orderBy("deleted_at", "desc")
             ->paginate(50);
 
@@ -258,7 +258,7 @@ class ColetaController extends Controller
             . "loja {$lojaNome}, quantidade {$coleta->quantidade}"
         );
 
-        return response()->json($coleta->load("loja", "user", "areaAuditoria"));
+        return response()->json($coleta->load("loja", "user", "areaAuditoria", "barcode.product"));
     }
 
     private function buscarDescricao($ean)

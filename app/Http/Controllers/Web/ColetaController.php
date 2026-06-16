@@ -33,7 +33,7 @@ class ColetaController extends Controller
 
     public function index(Request $request)
     {
-        $query = Coleta::with("loja", "areaAuditoria", "user");
+        $query = Coleta::with("loja", "areaAuditoria", "user", "barcode.product");
         $query = $this->lojaFilter($query);
 
         if ($request->filled("loja_id")) {
@@ -146,9 +146,11 @@ class ColetaController extends Controller
 
         $returnUrl = request('return_url', route("admin.coletas.index"));
 
-        $coleta->load("loja", "areaAuditoria");
+        $coleta->load("loja", "areaAuditoria", "barcode.product");
         $lojas = $this->lojasDisponiveis();
-    $areasAuditoria = AreaAuditoria::where("loja_id", $coleta->loja_id)
+    $areasAuditoria = AreaAuditoria::whereHas("lojas", function ($q) use ($coleta) {
+            $q->where("lojas.id", $coleta->loja_id);
+        })
         ->orderBy("nome")
         ->get();
         return view("admin.coletas.edit", compact("coleta", "lojas", "areasAuditoria", "returnUrl"));
@@ -208,7 +210,7 @@ class ColetaController extends Controller
 
     public function trashed()
     {
-        $query = Coleta::onlyTrashed()->with("loja", "areaAuditoria", "user");
+        $query = Coleta::onlyTrashed()->with("loja", "areaAuditoria", "user", "barcode.product");
         $query = $this->lojaFilter($query);
 
         $coletas = $query->orderBy("deleted_at", "desc")->paginate(50);

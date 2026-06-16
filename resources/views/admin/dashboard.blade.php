@@ -261,7 +261,7 @@
                                     <td>{{ $coleta->loja->nome ?? "-" }}</td>
                                     <td>{{ $coleta->user->name ?? "-" }}</td>
                                     <td>{{ $coleta->areaAuditoria->nome ?? "-" }}</td>
-                                    <td>{{ Str::limit($coleta->descricao, 35) }}</td>
+                                    <td>{{ Str::limit($coleta->productName, 35) }}</td>
                                     <td>{{ $coleta->ean }}</td>
                                     <td>{{ $coleta->quantidade }}</td>
                                     <td>{{ $coleta->data_validade->format("d/m/Y") }}</td>
