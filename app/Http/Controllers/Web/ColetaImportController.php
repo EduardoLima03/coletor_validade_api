@@ -107,6 +107,7 @@ class ColetaImportController extends Controller
         $areaCache = [];
 
         DB::transaction(function () use ($rows, $loja, &$chunkStats, &$areaCache) {
+            $this->keepAlive();
             foreach ($rows as $row) {
                 if (count($row) < 7 || empty(trim($row[4] ?? ''))) {
                     $chunkStats['puladas']++;
@@ -262,15 +263,11 @@ class ColetaImportController extends Controller
 
         $errosDetalhados = [];
 
-        DB::beginTransaction();
-
         try {
             while (($row = fgetcsv($handle, 0, ',', '"')) !== false) {
                 $stats['total']++;
 
-                if ($stats['total'] % 500 === 0) {
-                    DB::reconnect();
-                }
+                $this->keepAlive();
 
                 if (count($row) < 7 || empty(trim($row[4] ?? ''))) {
                     $stats['puladas']++;
@@ -316,6 +313,10 @@ class ColetaImportController extends Controller
                     $barcode = Barcode::where('ean', $ean)->with('product')->first();
                     $descricao = $barcode?->product?->description ?? ($csvDescricao ?: 'Produto não encontrado');
 
+                    if ($stats['total'] % 500 === 0) {
+                        DB::reconnect();
+                    }
+
                     $coleta = Coleta::where('loja_id', $loja->id)
                         ->where('area_auditoria_id', $areaAuditoria?->id)
                         ->where('ean', $ean)
@@ -350,8 +351,6 @@ class ColetaImportController extends Controller
                     ]);
                 }
             }
-
-            DB::commit();
 
             if ($stats['importadas'] == 0 && !empty($errosDetalhados)) {
                 fclose($handle);
@@ -399,7 +398,6 @@ class ColetaImportController extends Controller
             fclose($handle);
             return back()->with($type, $mensagem);
         } catch (\Exception $e) {
-            try { DB::rollBack(); } catch (\Exception $ignored) {}
             if (is_resource($handle)) {
                 fclose($handle);
             }
