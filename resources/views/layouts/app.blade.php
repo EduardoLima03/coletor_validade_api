@@ -235,6 +235,16 @@
                         <i class="bi bi-clipboard-data"></i> Coletas
                     </a>
                 </div>
+                <div class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.notificacoes.*') ? 'active' : '' }}"
+                       href="{{ route('admin.notificacoes.index') }}">
+                        <i class="bi bi-bell"></i> Notificações
+                        @php $c = \App\Models\Notification::forUser(auth()->id())->unread()->count(); @endphp
+                        @if ($c > 0)
+                            <span class="badge bg-danger ms-auto">{{ $c }}</span>
+                        @endif
+                    </a>
+                </div>
                 @if (in_array(strtoupper(auth()->user()->position ?? ''), ['ADMIN']))
         <div class="nav-section">Administração</div>
         <div class="nav-item">
@@ -289,7 +299,19 @@
                     </button>
                     <span class="fw-semibold d-none d-md-inline">@yield('title', 'Dashboard')</span>
                 </div>
-                <div>
+                <div class="d-flex align-items-center gap-3">
+                    @php
+                        $unreadNotifCount = \App\Models\Notification::forUser(auth()->id())->unread()->count();
+                    @endphp
+                    <a href="{{ route('admin.notificacoes.index') }}" class="text-dark position-relative text-decoration-none">
+                        <i class="bi bi-bell fs-5"></i>
+                        @if ($unreadNotifCount > 0)
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                  style="font-size: 0.6rem; min-width: 18px;">
+                                {{ $unreadNotifCount > 99 ? '99+' : $unreadNotifCount }}
+                            </span>
+                        @endif
+                    </a>
                     <span class="text-muted small">
                         <i class="bi bi-calendar3"></i> {{ now()->format('d/m/Y') }}
                     </span>

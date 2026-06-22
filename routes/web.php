@@ -102,5 +102,14 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
             ->name('audit.index');
         Route::get('/auditoria/{id}', [App\Http\Controllers\Web\AuditController::class, 'show'])
             ->name('audit.show');
+
+        Route::prefix('notificacoes')->name('notificacoes.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Web\NotificationController::class, 'index'])
+                ->name('index');
+            Route::post('/{id}/marcar-lida', [App\Http\Controllers\Web\NotificationController::class, 'markAsRead'])
+                ->name('mark-read');
+            Route::post('/marcar-todas-lidas', [App\Http\Controllers\Web\NotificationController::class, 'markAllAsRead'])
+                ->name('mark-all-read');
+        });
     });
 });
