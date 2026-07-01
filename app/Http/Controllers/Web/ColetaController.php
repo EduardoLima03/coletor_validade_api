@@ -33,7 +33,7 @@ class ColetaController extends Controller
 
     public function index(Request $request)
     {
-        $query = Coleta::with("loja", "areaAuditoria", "user");
+        $query = Coleta::with("loja", "areaAuditoria", "user", "barcode.product");
         $query = $this->lojaFilter($query);
 
         if ($request->filled("loja_id")) {
@@ -69,7 +69,45 @@ class ColetaController extends Controller
             $query->where("area_auditoria_id", $request->area_auditoria_id);
         }
 
-        $coletas = $query->orderBy("id")->paginate(50)->appends(request()->query());
+        if ($request->filled("data_coleta_inicio")) {
+            $query->whereDate("datahora", ">=", $request->data_coleta_inicio);
+        }
+
+        if ($request->filled("data_coleta_fim")) {
+            $query->whereDate("datahora", "<=", $request->data_coleta_fim);
+        }
+
+        $sortMap = [
+            'id' => 'coletas.id',
+            'loja' => 'lojas.nome',
+            'auditor' => 'users.name',
+            'setor' => 'areas_auditoria.nome',
+            'descricao' => 'coletas.descricao',
+            'ean' => 'coletas.ean',
+            'quantidade' => 'coletas.quantidade',
+            'unidade' => 'coletas.unidade',
+            'validade' => 'coletas.data_validade',
+            'datahora' => 'coletas.datahora',
+        ];
+
+        $sort = $request->get('sort', 'id');
+        $direction = $request->get('direction', 'asc');
+
+        if (!array_key_exists($sort, $sortMap)) {
+            $sort = 'id';
+        }
+        if (!in_array($direction, ['asc', 'desc'])) {
+            $direction = 'asc';
+        }
+
+        $query->leftJoin('lojas', 'coletas.loja_id', '=', 'lojas.id')
+              ->leftJoin('users', 'coletas.user_id', '=', 'users.id')
+              ->leftJoin('areas_auditoria', 'coletas.area_auditoria_id', '=', 'areas_auditoria.id')
+              ->select('coletas.*');
+
+        $query->orderBy($sortMap[$sort], $direction);
+
+        $coletas = $query->paginate(50)->appends(request()->query());
         $lojas = $this->lojasDisponiveis();
         $auditores = User::orderBy("name")->get();
         $areas = AreaAuditoria::orderBy("nome")->get();
@@ -91,7 +129,13 @@ class ColetaController extends Controller
                 $request->dias,
                 $request->data_inicio,
                 $request->data_fim,
-                auth()->user()
+                auth()->user(),
+                $request->user_id,
+                $request->ean,
+                $request->descricao,
+                $request->area_auditoria_id,
+                $request->data_coleta_inicio,
+                $request->data_coleta_fim
             ),
             "coletas.xlsx"
         );
@@ -105,7 +149,13 @@ class ColetaController extends Controller
                 $request->dias,
                 $request->data_inicio,
                 $request->data_fim,
-                auth()->user()
+                auth()->user(),
+                $request->user_id,
+                $request->ean,
+                $request->descricao,
+                $request->area_auditoria_id,
+                $request->data_coleta_inicio,
+                $request->data_coleta_fim
             ),
             "coletas.csv"
         );
@@ -124,12 +174,16 @@ class ColetaController extends Controller
             abort(403, 'Você não tem acesso a esta loja.');
         }
 
-        $coleta->load("loja", "areaAuditoria");
+        $returnUrl = request('return_url', route("admin.coletas.index"));
+
+        $coleta->load("loja", "areaAuditoria", "barcode.product");
         $lojas = $this->lojasDisponiveis();
-        $areasAuditoria = AreaAuditoria::where("loja_id", $coleta->loja_id)
-            ->orderBy("nome")
-            ->get();
-        return view("admin.coletas.edit", compact("coleta", "lojas", "areasAuditoria"));
+    $areasAuditoria = AreaAuditoria::whereHas("lojas", function ($q) use ($coleta) {
+            $q->where("lojas.id", $coleta->loja_id);
+        })
+        ->orderBy("nome")
+        ->get();
+        return view("admin.coletas.edit", compact("coleta", "lojas", "areasAuditoria", "returnUrl"));
     }
 
     public function update(Request $request, Coleta $coleta)
@@ -147,7 +201,8 @@ class ColetaController extends Controller
 
         $validated = $request->validate([
             "area_auditoria_id" => "nullable|exists:areas_auditoria,id",
-            "quantidade" => "required|integer|min:1",
+            "quantidade" => "required|string|max:50",
+            "unidade" => "nullable|string|max:10",
             "data_validade" => "required|date",
         ]);
 
@@ -155,10 +210,12 @@ class ColetaController extends Controller
 
         AuditLog::log("Editou coleta #$coleta->id - EAN: $coleta->ean", "coleta", $coleta->id);
 
-        return redirect()->route("admin.coletas.index")->with("success", "Coleta atualizada com sucesso!");
+        $returnUrl = $request->return_url ?? route("admin.coletas.index");
+
+        return redirect($returnUrl)->with("success", "Coleta atualizada com sucesso!");
     }
 
-    public function destroy(Coleta $coleta)
+    public function destroy(Request $request, Coleta $coleta)
     {
         $user = auth()->user();
 
@@ -171,11 +228,40 @@ class ColetaController extends Controller
             abort(403, 'Você não tem acesso a esta loja.');
         }
 
+        $returnUrl = $request->return_url ?? route("admin.coletas.index");
+
         $id = $coleta->id;
         $coleta->delete();
 
         AuditLog::log("Excluiu coleta #$id", "coleta", $id);
 
-        return redirect()->route("admin.coletas.index")->with("success", "Coleta excluída com sucesso!");
+        return redirect($returnUrl)->with("success", "Coleta excluída com sucesso!");
+    }
+
+    public function trashed()
+    {
+        $query = Coleta::onlyTrashed()->with("loja", "areaAuditoria", "user", "barcode.product");
+        $query = $this->lojaFilter($query);
+
+        $coletas = $query->orderBy("deleted_at", "desc")->paginate(50);
+        $lojas = $this->lojasDisponiveis();
+
+        return view("admin.coletas.trashed", compact("coletas", "lojas"));
+    }
+
+    public function restore($id)
+    {
+        $coleta = Coleta::withTrashed()->findOrFail($id);
+
+        $lojaIds = auth()->user()->lojasAcessoIds();
+        if (!empty($lojaIds) && !in_array($coleta->loja_id, $lojaIds)) {
+            abort(403, 'Você não tem acesso a esta loja.');
+        }
+
+        $coleta->restore();
+
+        AuditLog::log("Restaurou coleta #$coleta->id - EAN: $coleta->ean", "coleta", $coleta->id);
+
+        return redirect()->route("admin.coletas.trashed")->with("success", "Coleta restaurada com sucesso!");
     }
 }

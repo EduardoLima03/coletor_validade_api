@@ -39,7 +39,7 @@ class User extends Authenticatable
     public function lojasAcesso()
     {
         if ($this->position === 'ADMIN') {
-            return Loja::orderBy('nome');
+            return Loja::orderBy('nome')->get();
         }
 
         $lojasAssign = $this->lojas()->orderBy('nome')->get();

@@ -22,6 +22,9 @@
         "spatie/laravel-ignition": "^2.0"
     },
     "autoload": {
+        "files": [
+            "app/helpers.php"
+        ],
         "psr-4": {
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
@@ -37,6 +40,9 @@
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
+        ],
+        "serve": [
+            "@php -d upload_max_filesize=128M -d post_max_size=128M artisan serve"
         ],
         "post-update-cmd": [],
         "post-root-package-install": [

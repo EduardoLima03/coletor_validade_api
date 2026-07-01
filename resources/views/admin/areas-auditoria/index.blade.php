@@ -5,9 +5,41 @@
 @section("content")
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0"><i class="bi bi-clipboard-check"></i> Áreas de Auditoria</h4>
-    <a href="{{ route("admin.areas-auditoria.create") }}" class="btn btn-success">
-        <i class="bi bi-plus-lg"></i> Nova Área
-    </a>
+    <div>
+        <form action="{{ route("admin.areas-auditoria.merge") }}" method="POST" class="d-inline"
+              onsubmit="return confirm('Mesclar áreas com o mesmo nome em um único cadastro? As coletas serão atualizadas automaticamente.')">
+            @csrf
+            <button type="submit" class="btn btn-warning me-2">
+                <i class="bi bi-merge"></i> Mesclar Duplicadas
+            </button>
+        </form>
+        <a href="{{ route("admin.areas-auditoria.create") }}" class="btn btn-success">
+            <i class="bi bi-plus-lg"></i> Nova Área
+        </a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="GET" action="{{ route("admin.areas-auditoria.index") }}" class="row g-2">
+            <div class="col-md-4">
+                <label class="form-label">Loja</label>
+                <select name="loja_id" class="form-select">
+                    <option value="">Todas</option>
+                    @foreach ($lojas as $loja)
+                        <option value="{{ $loja->id }}" {{ request("loja_id") == $loja->id ? "selected" : "" }}>
+                            {{ $loja->nome }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-dc-primary w-100">
+                    <i class="bi bi-funnel"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <div class="card">
@@ -16,7 +48,7 @@
             <table class="table table-hover mb-0">
                 <thead class="table-dark">
                     <tr>
-                        <th>Loja</th>
+                        <th>Lojas</th>
                         <th>Nome</th>
                         <th>Descrição</th>
                         <th>Criado em</th>
@@ -26,21 +58,32 @@
                 <tbody>
                     @forelse ($areas as $area)
                         <tr>
-                            <td>{{ $area->loja?->nome ?? '---' }}</td>
+                            <td>
+                                @foreach ($area->lojas as $loja)
+                                    <span class="badge bg-secondary me-1">{{ $loja->nome }}</span>
+                                @endforeach
+                            </td>
                             <td>{{ $area->nome }}</td>
                             <td>{{ $area->descricao ?? '---' }}</td>
                             <td>{{ $area->created_at->format("d/m/Y H:i") }}</td>
                             <td class="text-center">
-                                <a href="{{ route("admin.areas-auditoria.edit", $area->id) }}"
+                                @php
+                                    $queryStr = http_build_query(request()->query());
+                                    $editUrl = route("admin.areas-auditoria.edit", $area->id);
+                                    if ($queryStr) {
+                                        $editUrl .= "?" . $queryStr;
+                                    }
+                                @endphp
+                                <a href="{{ $editUrl }}"
                                    class="btn btn-sm btn-outline-primary" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <form action="{{ route("admin.areas-auditoria.destroy", $area->id) }}"
+                                <form action="{{ route("admin.areas-auditoria.excluir", $area->id) }}"
                                       method="POST"
                                       class="d-inline"
                                       onsubmit="return confirm('Tem certeza que deseja excluir esta área?')">
                                     @csrf
-                                    @method("DELETE")
+                                    <input type="hidden" name="return_url" value="{{ url()->full() }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir">
                                         <i class="bi bi-trash"></i>
                                     </button>

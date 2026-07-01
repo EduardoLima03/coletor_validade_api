@@ -30,6 +30,10 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
 
     Route::get('/coletas', [App\Http\Controllers\Web\ColetaController::class, 'index'])
         ->name('coletas.index');
+    Route::get('/coletas/trashed', [App\Http\Controllers\Web\ColetaController::class, 'trashed'])
+        ->name('coletas.trashed');
+    Route::put('/coletas/{coleta}/restore', [App\Http\Controllers\Web\ColetaController::class, 'restore'])
+        ->name('coletas.restore');
     Route::get('/coletas/exportar/xlsx', [App\Http\Controllers\Web\ColetaController::class, 'exportXlsx'])
         ->name('coletas.export.xlsx');
     Route::get('/coletas/exportar/csv', [App\Http\Controllers\Web\ColetaController::class, 'exportCsv'])
@@ -74,14 +78,25 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
                      'destroy' => 'users.destroy']);
 
         Route::resource('areas-auditoria', App\Http\Controllers\Web\AreaAuditoriaController::class)
+            ->parameters(['areas-auditoria' => 'area_auditorium'])
             ->names(['index' => 'areas-auditoria.index', 'create' => 'areas-auditoria.create',
                      'store' => 'areas-auditoria.store', 'edit' => 'areas-auditoria.edit',
                      'update' => 'areas-auditoria.update', 'destroy' => 'areas-auditoria.destroy']);
+        Route::post('areas-auditoria/{area_auditorium}/excluir', [App\Http\Controllers\Web\AreaAuditoriaController::class, 'destroy'])
+            ->name('areas-auditoria.excluir');
+        Route::post('areas-auditoria/merge-duplicadas', [App\Http\Controllers\Web\AreaAuditoriaController::class, 'mergeDuplicates'])
+            ->name('areas-auditoria.merge');
 
         Route::get('/importar/coletas', [App\Http\Controllers\Web\ColetaImportController::class, 'showForm'])
             ->name('importar.coletas.form');
         Route::post('/importar/coletas/processar', [App\Http\Controllers\Web\ColetaImportController::class, 'import'])
             ->name('importar.coletas.processar');
+        Route::post('/importar/coletas/iniciar', [App\Http\Controllers\Web\ColetaImportController::class, 'start'])
+            ->name('importar.coletas.start');
+        Route::post('/importar/coletas/processar-lote', [App\Http\Controllers\Web\ColetaImportController::class, 'chunk'])
+            ->name('importar.coletas.chunk');
+        Route::get('/importar/coletas/progresso', [App\Http\Controllers\Web\ColetaImportController::class, 'progress'])
+            ->name('importar.coletas.progress');
 
         Route::get('/auditoria', [App\Http\Controllers\Web\AuditController::class, 'index'])
             ->name('audit.index');

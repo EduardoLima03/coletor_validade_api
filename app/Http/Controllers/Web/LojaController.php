@@ -10,9 +10,14 @@ use Illuminate\Validation\Rule;
 
 class LojaController extends Controller
 {
+    public function show($id)
+    {
+        return redirect()->route('admin.lojas.index');
+    }
+
     public function index()
     {
-        $lojas = Loja::orderBy("nome")->paginate(20);
+        $lojas = Loja::orderBy("nome")->paginate(20)->withQueryString();
         return view("admin.lojas.index", compact("lojas"));
     }
 
@@ -36,7 +41,8 @@ class LojaController extends Controller
 
     public function edit(Loja $loja)
     {
-        return view("admin.lojas.edit", compact("loja"));
+        $returnUrl = request('return_url', route('admin.lojas.index'));
+        return view("admin.lojas.edit", compact("loja", "returnUrl"));
     }
 
     public function update(Request $request, Loja $loja)
@@ -49,10 +55,12 @@ class LojaController extends Controller
 
         AuditLog::log("Editou a loja: " . $loja->nome, "loja", $loja->id);
 
-        return redirect()->route("admin.lojas.index")->with("success", "Loja atualizada com sucesso!");
+        $returnUrl = $request->return_url ?? route('admin.lojas.index');
+
+        return redirect($returnUrl)->with("success", "Loja atualizada com sucesso!");
     }
 
-    public function destroy(Loja $loja)
+    public function destroy(Request $request, Loja $loja)
     {
         $nome = $loja->nome;
         $id = $loja->id;
@@ -60,6 +68,8 @@ class LojaController extends Controller
 
         AuditLog::log("Excluiu a loja: " . $nome, "loja", $id);
 
-        return redirect()->route("admin.lojas.index")->with("success", "Loja excluída com sucesso!");
+        $returnUrl = $request->return_url ?? route('admin.lojas.index');
+
+        return redirect($returnUrl)->with("success", "Loja excluída com sucesso!");
     }
 }

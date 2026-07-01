@@ -198,6 +198,23 @@ Atualiza dados do usuário.
 
 ---
 
+### Coletas
+
+| Método | Rota                         | Descrição                                    | Autenticação     |
+|--------|------------------------------|----------------------------------------------|------------------|
+| POST   | /api/coleta                  | Criar ou substituir coleta                   | auth:sanctum     |
+| PUT    | /api/coleta/{id}             | Atualizar quantidade (0 = soft delete)       | auth:sanctum     |
+| GET    | /api/coleta/check            | Verificar se coleta já existe                | auth:sanctum     |
+| GET    | /api/coleta/trashed          | Listar coletas excluídas (gerência)          | GERENCIA,ADMIN   |
+| PUT    | /api/coleta/{id}/restore     | Restaurar coleta excluída (gerência)         | GERENCIA,ADMIN   |
+
+**Regras de soft delete:**
+- `PUT /api/coleta/{id}` com `quantidade: 0` → remove a coleta (soft delete), histórico preservado
+- `POST /api/coleta` com `action: replace` e `quantidade: 0` → soft delete da existente
+- Gerentes/ADMIN podem ver e restaurar via `trashed` e `restore`
+
+---
+
 ### Produtos
 
 | Método | Rota                    | Descrição            |
