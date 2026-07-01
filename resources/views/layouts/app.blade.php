@@ -236,6 +236,12 @@
                     </a>
                 </div>
                 <div class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.recolhimento*') ? 'active' : '' }}"
+                       href="{{ route('admin.recolhimento.dashboard') }}">
+                        <i class="bi bi-box-seam"></i> Recolhimento
+                    </a>
+                </div>
+                <div class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.notificacoes.*') ? 'active' : '' }}"
                        href="{{ route('admin.notificacoes.index') }}">
                         <i class="bi bi-bell"></i> Notificações

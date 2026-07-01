@@ -9,7 +9,7 @@ class Product extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['code', 'description'];
+    protected $fillable = ['code', 'description', 'custo'];
 
     public function barcodes()
     {

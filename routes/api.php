@@ -29,6 +29,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/read', [App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
         Route::post('/read-all', [App\Http\Controllers\Api\NotificationController::class, 'markAllAsRead']);
     });
+
+    Route::get('recolhimento/produtos/{lojaId}', [App\Http\Controllers\Api\RecolhimentoController::class, 'produtos']);
+    Route::post('recolhimento/registrar', [App\Http\Controllers\Api\RecolhimentoController::class, 'registrar']);
 });
 
 Route::middleware(['auth:sanctum', 'role:GERENCIA,ADMIN'])->group(function () {
