@@ -102,5 +102,10 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
             ->name('audit.index');
         Route::get('/auditoria/{id}', [App\Http\Controllers\Web\AuditController::class, 'show'])
             ->name('audit.show');
+
+        Route::get('/configuracoes', [App\Http\Controllers\Web\SettingController::class, 'index'])
+            ->name('settings.index');
+        Route::put('/configuracoes', [App\Http\Controllers\Web\SettingController::class, 'update'])
+            ->name('settings.update');
     });
 });
