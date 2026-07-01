@@ -68,7 +68,14 @@
                                    class="btn btn-sm btn-outline-info" title="Ver">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                <a href="{{ route('admin.products.edit', $product->id) }}"
+                                @php
+                                    $queryStr = http_build_query(request()->query());
+                                    $editUrl = route('admin.products.edit', $product->id);
+                                    if ($queryStr) {
+                                        $editUrl .= '?' . $queryStr;
+                                    }
+                                @endphp
+                                <a href="{{ $editUrl }}"
                                    class="btn btn-sm btn-outline-primary" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
@@ -78,6 +85,7 @@
                                       onsubmit="return confirm('Tem certeza que deseja excluir este produto?')">
                                     @csrf
                                     @method('DELETE')
+                                    <input type="hidden" name="return_url" value="{{ url()->full() }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir">
                                         <i class="bi bi-trash"></i>
                                     </button>

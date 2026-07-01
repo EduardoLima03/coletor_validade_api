@@ -2,16 +2,63 @@
 
 @section("title", "Coletas")
 
+@push("styles")
+<style>
+    @media print {
+        .sidebar, .topbar, .footer-dc, .card.mb-3, .btn-group, .pagination, .sidebar-overlay {
+            display: none !important;
+        }
+        .main-content {
+            margin-left: 0 !important;
+        }
+        .content-area {
+            padding: 0 !important;
+        }
+        .card {
+            box-shadow: none !important;
+            border: none !important;
+        }
+        .table {
+            font-size: 10pt;
+        }
+        .table-dark {
+            background: #005922 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .table-dark th a {
+            color: #fff !important;
+        }
+        .badge {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        a[href]:after {
+            content: none !important;
+        }
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
+@endpush
+
 @section("content")
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0"><i class="bi bi-clipboard-data"></i> Coletas</h4>
     <div class="btn-group">
+        <a href="{{ route("admin.coletas.trashed") }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-archive"></i> Excluídos
+        </a>
         <a href="{{ route("admin.coletas.export.xlsx", request()->query()) }}" class="btn btn-success btn-sm">
             <i class="bi bi-file-earmark-excel"></i> Excel
         </a>
         <a href="{{ route("admin.coletas.export.csv", request()->query()) }}" class="btn btn-secondary btn-sm">
             <i class="bi bi-file-earmark-spreadsheet"></i> CSV
         </a>
+        <button onclick="window.print()" class="btn btn-outline-dark btn-sm">
+            <i class="bi bi-printer"></i> Imprimir
+        </button>
     </div>
 </div>
 
@@ -71,12 +118,20 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label">Data inicio</label>
+                <label class="form-label">Validade inicio</label>
                 <input type="date" name="data_inicio" class="form-control" value="{{ request("data_inicio", date("Y-m-d")) }}">
             </div>
             <div class="col-md-2">
-                <label class="form-label">Data fim</label>
+                <label class="form-label">Validade fim</label>
                 <input type="date" name="data_fim" class="form-control" value="{{ request("data_fim") }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Coleta inicio</label>
+                <input type="date" name="data_coleta_inicio" class="form-control" value="{{ request("data_coleta_inicio") }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Coleta fim</label>
+                <input type="date" name="data_coleta_fim" class="form-control" value="{{ request("data_coleta_fim") }}">
             </div>
             <div class="col-md-2 d-flex align-items-end gap-1">
                 <button type="submit" class="btn btn-dc-primary flex-grow-1">
@@ -94,20 +149,25 @@
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover mb-0">
+                @php
+                    $currentSort = request('sort', 'id');
+                    $currentDir = request('direction', 'asc');
+                @endphp
                 <thead class="table-dark">
                     <tr>
-                        <th>#</th>
-                        <th>Loja</th>
-                        <th>Auditor</th>
-                        <th>Setor</th>
-                        <th>Descricao</th>
-                        <th>EAN</th>
-                        <th>Qtd</th>
-                        <th>Validade</th>
+                        <th><a href="{{ sortUrl('id', $currentSort, $currentDir) }}" class="text-white text-decoration-none"># {!! sortIcon('id', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('loja', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Loja {!! sortIcon('loja', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('auditor', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Auditor {!! sortIcon('auditor', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('setor', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Setor {!! sortIcon('setor', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('descricao', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Descricao {!! sortIcon('descricao', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('ean', $currentSort, $currentDir) }}" class="text-white text-decoration-none">EAN {!! sortIcon('ean', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('quantidade', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Qtd {!! sortIcon('quantidade', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('unidade', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Un {!! sortIcon('unidade', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('validade', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Validade {!! sortIcon('validade', $currentSort, $currentDir) !!}</a></th>
                         <th>Dias</th>
-                        <th>Data/Hora</th>
+                        <th><a href="{{ sortUrl('datahora', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Data/Hora {!! sortIcon('datahora', $currentSort, $currentDir) !!}</a></th>
                         @if ($podeEditar || $podeExcluir)
-                            <th class="text-center" width="140">Acoes</th>
+                            <th class="text-center no-print" width="140">Acoes</th>
                         @endif
                     </tr>
                 </thead>
@@ -118,9 +178,10 @@
                             <td>{{ $coleta->loja->nome ?? "-" }}</td>
                             <td>{{ $coleta->user->name ?? "-" }}</td>
                             <td>{{ $coleta->areaAuditoria->nome ?? "-" }}</td>
-                            <td>{{ Str::limit($coleta->descricao, 40) }}</td>
+                            <td>{{ Str::limit($coleta->productName, 40) }}</td>
                             <td>{{ $coleta->ean }}</td>
                             <td>{{ $coleta->quantidade }}</td>
+                            <td>{{ $coleta->unidade ?? "un" }}</td>
                             <td>{{ $coleta->data_validade->format("d/m/Y") }}</td>
                             <td>
                                 @php $dias = $coleta->dias_a_vencer; @endphp
@@ -136,9 +197,16 @@
                             </td>
                             <td>{{ $coleta->datahora->format("d/m/Y H:i") }}</td>
                             @if ($podeEditar || $podeExcluir)
-                            <td class="text-center">
+                            <td class="text-center no-print">
                                 @if ($podeEditar)
-                                <a href="{{ route("admin.coletas.edit", $coleta->id) }}"
+                                @php
+                                    $queryStr = http_build_query(request()->query());
+                                    $editUrl = route("admin.coletas.edit", $coleta->id);
+                                    if ($queryStr) {
+                                        $editUrl .= '?' . $queryStr;
+                                    }
+                                @endphp
+                                <a href="{{ $editUrl }}"
                                    class="btn btn-sm btn-outline-primary" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
@@ -150,6 +218,7 @@
                                       onsubmit="return confirm(\"Tem certeza que deseja excluir esta coleta?\")">
                                     @csrf
                                     @method("DELETE")
+                                    <input type="hidden" name="return_url" value="{{ url()->full() }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir">
                                         <i class="bi bi-trash"></i>
                                     </button>

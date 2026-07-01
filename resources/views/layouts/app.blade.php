@@ -329,7 +329,7 @@
             <div class="footer-dc">
                 <div class="d-flex justify-content-between align-items-center">
                     <span>
-                        <i class="bi bi-upc-scan"></i> Datacheck - {{ $companySetting->company_name ?? 'Medeiros' }} v1.0.0
+                        <i class="bi bi-upc-scan"></i> Datacheck - Medeiros v{{ config('app.version') }}
                     </span>
                     <span>
                         CL Dev

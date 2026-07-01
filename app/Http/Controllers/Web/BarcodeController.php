@@ -60,9 +60,10 @@ class BarcodeController extends Controller
 
     public function edit($id)
     {
+        $returnUrl = request('return_url', route('admin.barcodes.index'));
         $barcode = Barcode::findOrFail($id);
         $products = Product::orderBy('code')->get();
-        return view('admin.barcodes.edit', compact('barcode', 'products'));
+        return view('admin.barcodes.edit', compact('barcode', 'products', 'returnUrl'));
     }
 
     public function update(Request $request, $id)
@@ -78,11 +79,13 @@ class BarcodeController extends Controller
 
         AuditLog::log('update', 'barcode', $barcode->id, "Atualizou EAN {$barcode->ean} para produto #{$barcode->product_id}");
 
-        return redirect()->route('admin.barcodes.index')
+        $returnUrl = $request->return_url ?? route('admin.barcodes.index');
+
+        return redirect($returnUrl)
             ->with('success', 'Código de barras atualizado com sucesso.');
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $barcode = Barcode::findOrFail($id);
         $ean = $barcode->ean;
@@ -90,7 +93,9 @@ class BarcodeController extends Controller
 
         AuditLog::log('delete', 'barcode', $id, "Deletou EAN {$ean}");
 
-        return redirect()->route('admin.barcodes.index')
+        $returnUrl = $request->return_url ?? route('admin.barcodes.index');
+
+        return redirect($returnUrl)
             ->with('success', 'Código de barras deletado com sucesso.');
     }
 }
