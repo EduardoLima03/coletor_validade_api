@@ -16,6 +16,7 @@ class StoreProductRequest extends FormRequest
         return [
             'code' => 'required|integer|unique:products,code',
             'description' => 'required|string|max:255',
+            'custo' => 'nullable|regex:/^[\d.,]*$/',
         ];
     }
 }

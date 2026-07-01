@@ -29,7 +29,7 @@
             <div class="card-header"><strong>Upload de arquivo CSV</strong></div>
             <div class="card-body">
                 <p class="text-muted">
-                    Ou faça upload de um arquivo CSV com as colunas: <code>COD</code>, <code>DESCRICAO</code>, <code>EAN</code>.
+                    Ou faça upload de um arquivo CSV com as colunas: <code>COD</code>, <code>DESCRICAO</code>, <code>EAN</code> (e opcionalmente <code>CUSTO</code>).
                 </p>
                 <form id="upload-form">
                     @csrf
@@ -62,20 +62,29 @@
                         <tr>
                             <th>Coluna</th>
                             <th>Exemplo</th>
+                            <th>Obrigatório</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td><code>COD</code></td>
                             <td>1500104</td>
+                            <td>Sim</td>
                         </tr>
                         <tr>
                             <td><code>DESCRICAO</code></td>
                             <td>FEIJAO CORDA PRECIOSO 1KG</td>
+                            <td>Sim</td>
                         </tr>
                         <tr>
                             <td><code>EAN</code></td>
                             <td>7898926342068</td>
+                            <td>Sim</td>
+                        </tr>
+                        <tr>
+                            <td><code>CUSTO</code></td>
+                            <td>5,99</td>
+                            <td>Não (0,00 se vazio)</td>
                         </tr>
                     </tbody>
                 </table>

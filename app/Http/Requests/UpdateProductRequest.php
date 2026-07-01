@@ -16,6 +16,7 @@ class UpdateProductRequest extends FormRequest
         return [
             'code' => 'required|integer|unique:products,code,' . $this->route('product'),
             'description' => 'required|string|max:255',
+            'custo' => 'nullable|regex:/^[\d.,]*$/',
         ];
     }
 }

@@ -68,6 +68,7 @@ class ImportController extends Controller
                 'code' => trim($row[0]),
                 'description' => trim($row[1]),
                 'ean' => trim($row[2]),
+                'custo' => isset($row[3]) ? trim($row[3]) : 0,
             ];
 
             if (count($chunk) >= self::CHUNK_SIZE) {
@@ -187,7 +188,10 @@ class ImportController extends Controller
                 try {
                     $product = Product::updateOrCreate(
                         ['code' => trim($row[0])],
-                        ['description' => trim($row[1])]
+                        [
+                            'description' => trim($row[1]),
+                            'custo' => isset($row[3]) ? trim($row[3]) : 0,
+                        ]
                     );
 
                     if ($product->wasRecentlyCreated) {
@@ -324,7 +328,10 @@ class ImportController extends Controller
                 try {
                     $product = Product::updateOrCreate(
                         ['code' => $row['code']],
-                        ['description' => $row['description']]
+                        [
+                            'description' => $row['description'],
+                            'custo' => $row['custo'] ?? 0,
+                        ]
                     );
 
                     if ($product->wasRecentlyCreated) {

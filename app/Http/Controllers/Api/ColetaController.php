@@ -45,6 +45,7 @@ class ColetaController extends Controller
             ->where("area_auditoria_id", $areaAuditoriaId)
             ->where("ean", $validated["ean"])
             ->where("data_validade", $validated["validade"])
+            ->whereNull("recolhido_em")
             ->first();
 
         if (!$action && $existing) {
@@ -225,6 +226,7 @@ class ColetaController extends Controller
             ->where("area_auditoria_id", $areaAuditoriaId)
             ->where("ean", $validated["ean"])
             ->where("data_validade", $validated["validade"])
+            ->whereNull("recolhido_em")
             ->first();
 
         return response()->json([

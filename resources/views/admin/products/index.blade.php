@@ -44,6 +44,7 @@
                     <tr>
                         <th>Código</th>
                         <th>Descrição</th>
+                        <th>Custo Unitário</th>
                         <th>Códigos de Barras</th>
                         <th>Criado em</th>
                         <th class="text-center" width="180">Ações</th>
@@ -54,6 +55,7 @@
                         <tr>
                             <td>{{ $product->code }}</td>
                             <td>{{ $product->description }}</td>
+                            <td>R$ {{ number_format($product->custo ?? 0, 2, ',', '.') }}</td>
                             <td>
                                 @foreach ($product->barcodes as $barcode)
                                     <span class="badge bg-info text-dark">{{ $barcode->ean }}</span>
@@ -94,7 +96,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-4">
+                            <td colspan="6" class="text-center text-muted py-4">
                                 <i class="bi bi-inbox"></i> Nenhum produto encontrado.
                             </td>
                         </tr>

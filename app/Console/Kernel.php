@@ -15,10 +15,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('coletas:check-expiring --days=5')->dailyAt('06:00');
-        $schedule->command('coletas:check-expiring --days=3')->dailyAt('06:30');
-        $schedule->command('coletas:check-expiring --days=1')->dailyAt('07:00');
-        $schedule->command('recolhimento:check')->weekdays()->hourly();
+        // Notificações desativadas
+        // $schedule->command('coletas:check-expiring --days=5')->dailyAt('06:00');
+        // $schedule->command('coletas:check-expiring --days=3')->dailyAt('06:30');
+        // $schedule->command('coletas:check-expiring --days=1')->dailyAt('07:00');
+        // $schedule->command('recolhimento:check')->weekdays()->hourly();
     }
 
     /**

@@ -24,11 +24,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('lojas', [App\Http\Controllers\Api\LojaController::class, 'index']);
     Route::get('areas-auditoria', [App\Http\Controllers\Api\AreaAuditoriaController::class, 'index']);
 
-    Route::prefix('notifications')->group(function () {
+    {{-- Route::prefix('notifications')->group(function () {
         Route::get('/', [App\Http\Controllers\Api\NotificationController::class, 'index']);
         Route::post('/{id}/read', [App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
         Route::post('/read-all', [App\Http\Controllers\Api\NotificationController::class, 'markAllAsRead']);
-    });
+    }); --}}
 
     Route::get('recolhimento/produtos/{lojaId}', [App\Http\Controllers\Api\RecolhimentoController::class, 'produtos']);
     Route::post('recolhimento/registrar', [App\Http\Controllers\Api\RecolhimentoController::class, 'registrar']);

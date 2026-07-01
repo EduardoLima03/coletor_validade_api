@@ -30,6 +30,15 @@ class RecolhimentoRegraController extends Controller
 
         $validated['ativo'] = $request->boolean('ativo');
 
+        $exists = RecolhimentoRegra::where('dia_semana', $validated['dia_semana'])
+            ->where('dias_antecedencia', $validated['dias_antecedencia'])
+            ->exists();
+
+        if ($exists) {
+            return back()->withInput()
+                ->with('error', 'Já existe uma regra cadastrada para este dia da semana com esta antecedência.');
+        }
+
         RecolhimentoRegra::create($validated);
 
         return redirect()->route('admin.recolhimento-regras.index')
@@ -54,6 +63,16 @@ class RecolhimentoRegraController extends Controller
         ]);
 
         $validated['ativo'] = $request->boolean('ativo');
+
+        $exists = RecolhimentoRegra::where('dia_semana', $validated['dia_semana'])
+            ->where('dias_antecedencia', $validated['dias_antecedencia'])
+            ->where('id', '!=', $recolhimentoRegra->id)
+            ->exists();
+
+        if ($exists) {
+            return back()->withInput()
+                ->with('error', 'Já existe uma regra cadastrada para este dia da semana com esta antecedência.');
+        }
 
         $recolhimentoRegra->update($validated);
 
