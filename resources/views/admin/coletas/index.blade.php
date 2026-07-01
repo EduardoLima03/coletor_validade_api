@@ -105,19 +105,23 @@
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover mb-0">
+                @php
+                    $currentSort = request('sort', 'id');
+                    $currentDir = request('direction', 'asc');
+                @endphp
                 <thead class="table-dark">
                     <tr>
-                        <th>#</th>
-                        <th>Loja</th>
-                        <th>Auditor</th>
-                        <th>Setor</th>
-                        <th>Descricao</th>
-                        <th>EAN</th>
-                        <th>Qtd</th>
-                        <th>Un</th>
-                        <th>Validade</th>
+                        <th><a href="{{ sortUrl('id', $currentSort, $currentDir) }}" class="text-white text-decoration-none"># {!! sortIcon('id', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('loja', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Loja {!! sortIcon('loja', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('auditor', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Auditor {!! sortIcon('auditor', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('setor', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Setor {!! sortIcon('setor', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('descricao', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Descricao {!! sortIcon('descricao', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('ean', $currentSort, $currentDir) }}" class="text-white text-decoration-none">EAN {!! sortIcon('ean', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('quantidade', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Qtd {!! sortIcon('quantidade', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('unidade', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Un {!! sortIcon('unidade', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('validade', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Validade {!! sortIcon('validade', $currentSort, $currentDir) !!}</a></th>
                         <th>Dias</th>
-                        <th>Data/Hora</th>
+                        <th><a href="{{ sortUrl('datahora', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Data/Hora {!! sortIcon('datahora', $currentSort, $currentDir) !!}</a></th>
                         @if ($podeEditar || $podeExcluir)
                             <th class="text-center" width="140">Acoes</th>
                         @endif

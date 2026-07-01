@@ -77,7 +77,37 @@ class ColetaController extends Controller
             $query->whereDate("datahora", "<=", $request->data_coleta_fim);
         }
 
-        $coletas = $query->orderBy("id")->paginate(50)->appends(request()->query());
+        $sortMap = [
+            'id' => 'coletas.id',
+            'loja' => 'lojas.nome',
+            'auditor' => 'users.name',
+            'setor' => 'areas_auditoria.nome',
+            'descricao' => 'coletas.descricao',
+            'ean' => 'coletas.ean',
+            'quantidade' => 'coletas.quantidade',
+            'unidade' => 'coletas.unidade',
+            'validade' => 'coletas.data_validade',
+            'datahora' => 'coletas.datahora',
+        ];
+
+        $sort = $request->get('sort', 'id');
+        $direction = $request->get('direction', 'asc');
+
+        if (!array_key_exists($sort, $sortMap)) {
+            $sort = 'id';
+        }
+        if (!in_array($direction, ['asc', 'desc'])) {
+            $direction = 'asc';
+        }
+
+        $query->leftJoin('lojas', 'coletas.loja_id', '=', 'lojas.id')
+              ->leftJoin('users', 'coletas.user_id', '=', 'users.id')
+              ->leftJoin('areas_auditoria', 'coletas.area_auditoria_id', '=', 'areas_auditoria.id')
+              ->select('coletas.*');
+
+        $query->orderBy($sortMap[$sort], $direction);
+
+        $coletas = $query->paginate(50)->appends(request()->query());
         $lojas = $this->lojasDisponiveis();
         $auditores = User::orderBy("name")->get();
         $areas = AreaAuditoria::orderBy("nome")->get();
