@@ -35,4 +35,11 @@ class NotificationController extends Controller
 
         return redirect()->back()->with('success', 'Todas as notificações foram marcadas como lidas.');
     }
+
+    public function unreadCount()
+    {
+        return response()->json([
+            'count' => Notification::forUser(auth()->id())->unread()->count(),
+        ]);
+    }
 }

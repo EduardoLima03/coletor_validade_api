@@ -239,10 +239,8 @@
                     <a class="nav-link {{ request()->routeIs('admin.notificacoes.*') ? 'active' : '' }}"
                        href="{{ route('admin.notificacoes.index') }}">
                         <i class="bi bi-bell"></i> Notificações
-                        @php $c = \App\Models\Notification::forUser(auth()->id())->unread()->count(); @endphp
-                        @if ($c > 0)
-                            <span class="badge bg-danger ms-auto">{{ $c }}</span>
-                        @endif
+                         @php $c = \App\Models\Notification::forUser(auth()->id())->unread()->count(); @endphp
+                        <span id="notifBadgeSide" class="badge bg-danger ms-auto" style="{{ $c > 0 ? '' : 'display:none' }}">{{ $c }}</span>
                     </a>
                 </div>
                 @if (in_array(strtoupper(auth()->user()->position ?? ''), ['ADMIN']))
@@ -305,12 +303,11 @@
                     @endphp
                     <a href="{{ route('admin.notificacoes.index') }}" class="text-dark position-relative text-decoration-none">
                         <i class="bi bi-bell fs-5"></i>
-                        @if ($unreadNotifCount > 0)
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                                  style="font-size: 0.6rem; min-width: 18px;">
-                                {{ $unreadNotifCount > 99 ? '99+' : $unreadNotifCount }}
-                            </span>
-                        @endif
+                        <span id="notifBadgeTop"
+                              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                              style="font-size: 0.6rem; min-width: 18px; {{ $unreadNotifCount > 0 ? '' : 'display:none' }}">
+                            {{ $unreadNotifCount > 99 ? '99+' : $unreadNotifCount }}
+                        </span>
                     </a>
                     <span class="text-muted small">
                         <i class="bi bi-calendar3"></i> {{ now()->format('d/m/Y') }}
@@ -361,6 +358,25 @@
             document.getElementById('sidebar')?.classList.remove('show');
             document.getElementById('sidebarOverlay')?.classList.remove('show');
         });
+
+        let notifBadgeTop = document.getElementById('notifBadgeTop');
+        let notifBadgeSide = document.getElementById('notifBadgeSide');
+        setInterval(function() {
+            fetch('{{ route("admin.notificacoes.unread-count") }}')
+                .then(r => r.json())
+                .then(d => {
+                    let c = d.count || 0;
+                    if (notifBadgeTop) {
+                        notifBadgeTop.textContent = c > 99 ? '99+' : c;
+                        notifBadgeTop.style.display = c > 0 ? '' : 'none';
+                    }
+                    if (notifBadgeSide) {
+                        notifBadgeSide.textContent = c;
+                        notifBadgeSide.style.display = c > 0 ? '' : 'none';
+                    }
+                })
+                .catch(() => {});
+        }, 30000);
     </script>
     @stack('scripts')
 </body>

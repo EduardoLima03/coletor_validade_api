@@ -23,14 +23,21 @@ class CheckExpiringColetas extends Command
             ->groupBy('user_id');
 
         $created = 0;
+        $today = now()->startOfDay();
+
+        $existing = Notification::where('type', 'expiry_alert')
+            ->whereDate('created_at', $today)
+            ->pluck('user_id')
+            ->toArray();
 
         foreach ($expiring as $userId => $coletas) {
             if (!$userId) continue;
+            if (in_array($userId, $existing)) continue;
 
             $count = $coletas->count();
             $lojaNomes = $coletas->pluck('loja.nome')->unique()->take(3)->implode(', ');
 
-            $notification = Notification::create([
+            Notification::create([
                 'user_id' => $userId,
                 'type' => 'expiry_alert',
                 'title' => "{$count} coleta(s) próxima(s) do vencimento",
