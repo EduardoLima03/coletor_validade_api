@@ -258,6 +258,12 @@
             </a>
         </div>
         <div class="nav-item">
+            <a class="nav-link {{ request()->routeIs('admin.recolhimento-regras.*') ? 'active' : '' }}"
+               href="{{ route('admin.recolhimento-regras.index') }}">
+                <i class="bi bi-gear"></i> Regras de Recolhimento
+            </a>
+        </div>
+        <div class="nav-item">
             <a class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}"
                href="{{ route('admin.users.index') }}">
                 <i class="bi bi-people"></i> Usuários
