@@ -2,6 +2,47 @@
 
 @section("title", "Coletas")
 
+@push("styles")
+<style>
+    @media print {
+        .sidebar, .topbar, .footer-dc, .card.mb-3, .btn-group, .pagination, .sidebar-overlay {
+            display: none !important;
+        }
+        .main-content {
+            margin-left: 0 !important;
+        }
+        .content-area {
+            padding: 0 !important;
+        }
+        .card {
+            box-shadow: none !important;
+            border: none !important;
+        }
+        .table {
+            font-size: 10pt;
+        }
+        .table-dark {
+            background: #005922 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .table-dark th a {
+            color: #fff !important;
+        }
+        .badge {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        a[href]:after {
+            content: none !important;
+        }
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
+@endpush
+
 @section("content")
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0"><i class="bi bi-clipboard-data"></i> Coletas</h4>
@@ -15,6 +56,9 @@
         <a href="{{ route("admin.coletas.export.csv", request()->query()) }}" class="btn btn-secondary btn-sm">
             <i class="bi bi-file-earmark-spreadsheet"></i> CSV
         </a>
+        <button onclick="window.print()" class="btn btn-outline-dark btn-sm">
+            <i class="bi bi-printer"></i> Imprimir
+        </button>
     </div>
 </div>
 
@@ -123,7 +167,7 @@
                         <th>Dias</th>
                         <th><a href="{{ sortUrl('datahora', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Data/Hora {!! sortIcon('datahora', $currentSort, $currentDir) !!}</a></th>
                         @if ($podeEditar || $podeExcluir)
-                            <th class="text-center" width="140">Acoes</th>
+                            <th class="text-center no-print" width="140">Acoes</th>
                         @endif
                     </tr>
                 </thead>
@@ -153,7 +197,7 @@
                             </td>
                             <td>{{ $coleta->datahora->format("d/m/Y H:i") }}</td>
                             @if ($podeEditar || $podeExcluir)
-                            <td class="text-center">
+                            <td class="text-center no-print">
                                 @if ($podeEditar)
                                 @php
                                     $queryStr = http_build_query(request()->query());
