@@ -116,4 +116,9 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
 
     Route::get('/recolhimento', [App\Http\Controllers\Web\RecolhimentoDashboardController::class, 'index'])
         ->name('recolhimento.dashboard');
+
+    Route::resource('recolhimento-regras', App\Http\Controllers\Web\RecolhimentoRegraController::class)
+        ->names(['index' => 'recolhimento-regras.index', 'create' => 'recolhimento-regras.create',
+                 'store' => 'recolhimento-regras.store', 'edit' => 'recolhimento-regras.edit',
+                 'update' => 'recolhimento-regras.update', 'destroy' => 'recolhimento-regras.destroy']);
 });

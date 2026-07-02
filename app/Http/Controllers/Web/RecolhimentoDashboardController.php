@@ -22,7 +22,16 @@ class RecolhimentoDashboardController extends Controller
 
         if ($user->position !== 'ADMIN') {
             $lojaIds = $user->lojasAcessoIds();
-            if (!empty($lojaIds) && empty($filters['loja_id'])) {
+
+            if (!empty($filters['loja_id'])) {
+                if (is_array($filters['loja_id'])) {
+                    $filters['loja_id'] = array_intersect($filters['loja_id'], $lojaIds);
+                } elseif (!in_array($filters['loja_id'], $lojaIds)) {
+                    $filters['loja_id'] = [];
+                }
+            }
+
+            if (empty($filters['loja_id']) && !empty($lojaIds)) {
                 $filters['loja_id'] = $lojaIds;
             }
         }

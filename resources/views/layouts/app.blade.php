@@ -245,6 +245,12 @@
                         <i class="bi bi-box-seam"></i> Recolhimento
                     </a>
                 </div>
+                <div class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.recolhimento-regras.*') ? 'active' : '' }}"
+                       href="{{ route('admin.recolhimento-regras.index') }}">
+                        <i class="bi bi-gear"></i> Regras de Recolhimento
+                    </a>
+                </div>
                 {{-- Notificações desativadas --}}
                 @if (in_array(strtoupper(auth()->user()->position ?? ''), ['ADMIN']))
         <div class="nav-section">Administração</div>
@@ -252,12 +258,6 @@
             <a class="nav-link {{ request()->routeIs('admin.importar.coletas.*') ? 'active' : '' }}"
                href="{{ route('admin.importar.coletas.form') }}">
                 <i class="bi bi-upload"></i> Importar Coletas
-            </a>
-        </div>
-        <div class="nav-item">
-            <a class="nav-link {{ request()->routeIs('admin.recolhimento-regras.*') ? 'active' : '' }}"
-               href="{{ route('admin.recolhimento-regras.index') }}">
-                <i class="bi bi-gear"></i> Regras de Recolhimento
             </a>
         </div>
         <div class="nav-item">
