@@ -103,28 +103,15 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
         Route::get('/auditoria/{id}', [App\Http\Controllers\Web\AuditController::class, 'show'])
             ->name('audit.show');
 
-<<<<<<< HEAD
-        // Route::prefix('notificacoes')->name('notificacoes.')->group(function () {
-        //     Route::get('/', [App\Http\Controllers\Web\NotificationController::class, 'index'])
-        //         ->name('index');
-        //     Route::get('/nao-lidas', [App\Http\Controllers\Web\NotificationController::class, 'unreadCount'])
-        //         ->name('unread-count');
-        //     Route::post('/{id}/marcar-lida', [App\Http\Controllers\Web\NotificationController::class, 'markAsRead'])
-        //         ->name('mark-read');
-        //     Route::post('/marcar-todas-lidas', [App\Http\Controllers\Web\NotificationController::class, 'markAllAsRead'])
-        //         ->name('mark-all-read');
-        // });
-
         Route::resource('recolhimento-regras', App\Http\Controllers\Web\RecolhimentoRegraController::class)
             ->names(['index' => 'recolhimento-regras.index', 'create' => 'recolhimento-regras.create',
                      'store' => 'recolhimento-regras.store', 'edit' => 'recolhimento-regras.edit',
                      'update' => 'recolhimento-regras.update', 'destroy' => 'recolhimento-regras.destroy']);
-=======
+
         Route::get('/configuracoes', [App\Http\Controllers\Web\SettingController::class, 'index'])
             ->name('settings.index');
         Route::put('/configuracoes', [App\Http\Controllers\Web\SettingController::class, 'update'])
             ->name('settings.update');
->>>>>>> develop
     });
 
     Route::get('/recolhimento', [App\Http\Controllers\Web\RecolhimentoDashboardController::class, 'index'])

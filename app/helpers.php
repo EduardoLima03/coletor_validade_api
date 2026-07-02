@@ -1,7 +1,4 @@
 <?php
-<<<<<<< HEAD
-// Helper functions
-=======
 
 if (!function_exists('sortUrl')) {
     function sortUrl($column, $currentSort, $currentDir)
@@ -23,4 +20,3 @@ if (!function_exists('sortIcon')) {
         return '<i class="' . $icon . '"></i>';
     }
 }
->>>>>>> develop
