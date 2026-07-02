@@ -43,7 +43,8 @@ class ColetasExport implements FromQuery, WithHeadings, WithMapping, WithStyles
 
     public function query()
     {
-        $query = Coleta::with("loja", "user", "areaAuditoria", "barcode.product");
+        $query = Coleta::with("loja", "user", "areaAuditoria", "barcode.product")
+            ->whereNull("recolhido_em");
 
         if ($this->user && $this->user->position !== 'ADMIN') {
             $lojaIds = $this->user->lojasAcessoIds();

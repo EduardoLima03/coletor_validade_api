@@ -33,7 +33,8 @@ class ColetaController extends Controller
 
     public function index(Request $request)
     {
-        $query = Coleta::with("loja", "areaAuditoria", "user", "barcode.product");
+        $query = Coleta::with("loja", "areaAuditoria", "user", "barcode.product")
+            ->whereNull("recolhido_em");
         $query = $this->lojaFilter($query);
 
         if ($request->filled("loja_id")) {
