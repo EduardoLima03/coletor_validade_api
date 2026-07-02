@@ -32,6 +32,22 @@ class RecolhimentoController extends Controller
         ]);
     }
 
+    public function pendentes(int $lojaId): JsonResponse
+    {
+        $produtos = $this->recolhimentoService->produtosParaRecolher($lojaId);
+        $total = $produtos->count();
+
+        return response()->json([
+            'total' => $total,
+            'tem_pendentes' => $total > 0,
+            'produtos' => $produtos->take(5)->map(fn($c) => [
+                'descricao' => $c->product_name,
+                'data_validade' => $c->data_validade?->format('d/m/Y'),
+                'dias_a_vencer' => $c->dias_a_vencer,
+            ]),
+        ]);
+    }
+
     public function registrar(Request $request): JsonResponse
     {
         $validated = $request->validate([

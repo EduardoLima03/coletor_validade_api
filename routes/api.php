@@ -31,6 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // });
 
     Route::get('recolhimento/produtos/{lojaId}', [App\Http\Controllers\Api\RecolhimentoController::class, 'produtos']);
+    Route::get('recolhimento/pendentes/{lojaId}', [App\Http\Controllers\Api\RecolhimentoController::class, 'pendentes']);
     Route::post('recolhimento/registrar', [App\Http\Controllers\Api\RecolhimentoController::class, 'registrar']);
 });
 
