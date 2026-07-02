@@ -63,7 +63,7 @@ class ColetaController extends Controller
         }
 
         if ($request->filled("descricao")) {
-            $query->where("descricao", "like", "%{$request->descricao}%");
+            $query->where("coletas.descricao", "like", "%{$request->descricao}%");
         }
 
         if ($request->filled("area_auditoria_id")) {

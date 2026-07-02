@@ -81,11 +81,8 @@ class ImportController extends Controller
                 'code' => trim($row[0]),
                 'description' => trim($row[1]),
                 'ean' => trim($row[2]),
-<<<<<<< HEAD
                 'custo' => isset($row[3]) ? trim($row[3]) : 0,
-=======
                 'line' => $lineNumber,
->>>>>>> develop
             ];
 
             if (count($chunk) >= self::CHUNK_SIZE) {
