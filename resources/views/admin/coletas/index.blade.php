@@ -2,6 +2,47 @@
 
 @section("title", "Coletas")
 
+@push("styles")
+<style>
+    @media print {
+        .sidebar, .topbar, .footer-dc, .card.mb-3, .btn-group, .pagination, .sidebar-overlay {
+            display: none !important;
+        }
+        .main-content {
+            margin-left: 0 !important;
+        }
+        .content-area {
+            padding: 0 !important;
+        }
+        .card {
+            box-shadow: none !important;
+            border: none !important;
+        }
+        .table {
+            font-size: 10pt;
+        }
+        .table-dark {
+            background: #005922 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .table-dark th a {
+            color: #fff !important;
+        }
+        .badge {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        a[href]:after {
+            content: none !important;
+        }
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
+@endpush
+
 @section("content")
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0"><i class="bi bi-clipboard-data"></i> Coletas</h4>
@@ -15,6 +56,9 @@
         <a href="{{ route("admin.coletas.export.csv", request()->query()) }}" class="btn btn-secondary btn-sm">
             <i class="bi bi-file-earmark-spreadsheet"></i> CSV
         </a>
+        <button onclick="window.print()" class="btn btn-outline-dark btn-sm">
+            <i class="bi bi-printer"></i> Imprimir
+        </button>
     </div>
 </div>
 
@@ -105,21 +149,25 @@
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover mb-0">
+                @php
+                    $currentSort = request('sort', 'id');
+                    $currentDir = request('direction', 'asc');
+                @endphp
                 <thead class="table-dark">
                     <tr>
-                        <th>#</th>
-                        <th>Loja</th>
-                        <th>Auditor</th>
-                        <th>Setor</th>
-                        <th>Descricao</th>
-                        <th>EAN</th>
-                        <th>Qtd</th>
-                        <th>Un</th>
-                        <th>Validade</th>
+                        <th><a href="{{ sortUrl('id', $currentSort, $currentDir) }}" class="text-white text-decoration-none"># {!! sortIcon('id', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('loja', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Loja {!! sortIcon('loja', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('auditor', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Auditor {!! sortIcon('auditor', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('setor', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Setor {!! sortIcon('setor', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('descricao', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Descricao {!! sortIcon('descricao', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('ean', $currentSort, $currentDir) }}" class="text-white text-decoration-none">EAN {!! sortIcon('ean', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('quantidade', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Qtd {!! sortIcon('quantidade', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('unidade', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Un {!! sortIcon('unidade', $currentSort, $currentDir) !!}</a></th>
+                        <th><a href="{{ sortUrl('validade', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Validade {!! sortIcon('validade', $currentSort, $currentDir) !!}</a></th>
                         <th>Dias</th>
-                        <th>Data/Hora</th>
+                        <th><a href="{{ sortUrl('datahora', $currentSort, $currentDir) }}" class="text-white text-decoration-none">Data/Hora {!! sortIcon('datahora', $currentSort, $currentDir) !!}</a></th>
                         @if ($podeEditar || $podeExcluir)
-                            <th class="text-center" width="140">Acoes</th>
+                            <th class="text-center no-print" width="140">Acoes</th>
                         @endif
                     </tr>
                 </thead>
@@ -149,7 +197,7 @@
                             </td>
                             <td>{{ $coleta->datahora->format("d/m/Y H:i") }}</td>
                             @if ($podeEditar || $podeExcluir)
-                            <td class="text-center">
+                            <td class="text-center no-print">
                                 @if ($podeEditar)
                                 @php
                                     $queryStr = http_build_query(request()->query());

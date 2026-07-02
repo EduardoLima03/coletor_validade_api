@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <title>Login - Datacheck Medeiros</title>
+    <title>Login - Datacheck {{ $companySetting->company_name ?? 'Medeiros' }}</title>
     <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -66,8 +66,12 @@
             <div class="col-md-5">
                 <div class="card">
                     <div class="card-header">
-                        <img src="{{ asset('favicon.png') }}" alt="Datacheck">
-                        <h4 class="mb-0">Datacheck - Medeiros</h4>
+                        @if ($companySetting && $companySetting->company_icon)
+                            <img src="{{ asset('storage/' . $companySetting->company_icon) }}" alt="Datacheck">
+                        @else
+                            <img src="{{ asset('favicon.png') }}" alt="Datacheck">
+                        @endif
+                        <h4 class="mb-0">Datacheck - {{ $companySetting->company_name ?? 'Medeiros' }}</h4>
                         <small>Faça login para continuar</small>
                     </div>
                     <div class="card-body p-4">

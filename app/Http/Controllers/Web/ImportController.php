@@ -15,6 +15,7 @@ class ImportController extends Controller
 {
     private const CACHE_PREFIX = 'import_progress_';
     private const CHUNK_SIZE = 200;
+    private const MAX_ERROR_DETAILS = 100;
 
     public function showForm()
     {
@@ -55,11 +56,23 @@ class ImportController extends Controller
             'total_rows' => 0,
         ];
 
+        $errorDetails = [];
+        $lineNumber = 1;
         $chunk = [];
 
         while (($row = fgetcsv($handle, 0, ',', '"')) !== false) {
+            $lineNumber++;
+
             if (count($row) < 3) {
                 $stats['errors']++;
+                if (count($errorDetails) < self::MAX_ERROR_DETAILS) {
+                    $errorDetails[] = [
+                        'line' => $lineNumber,
+                        'code' => $row[0] ?? '',
+                        'ean' => $row[2] ?? '',
+                        'reason' => 'Linha com menos de 3 colunas',
+                    ];
+                }
                 continue;
             }
 
@@ -68,19 +81,23 @@ class ImportController extends Controller
                 'code' => trim($row[0]),
                 'description' => trim($row[1]),
                 'ean' => trim($row[2]),
+<<<<<<< HEAD
                 'custo' => isset($row[3]) ? trim($row[3]) : 0,
+=======
+                'line' => $lineNumber,
+>>>>>>> develop
             ];
 
             if (count($chunk) >= self::CHUNK_SIZE) {
                 $this->keepAlive();
-                $this->processChunk($chunk, $stats);
+                $this->processChunk($chunk, $stats, $errorDetails);
                 $chunk = [];
             }
         }
 
         if (!empty($chunk)) {
             $this->keepAlive();
-            $this->processChunk($chunk, $stats);
+            $this->processChunk($chunk, $stats, $errorDetails);
         }
 
         fclose($handle);
@@ -97,7 +114,9 @@ class ImportController extends Controller
 
         AuditLog::log('import', 'csv', 0, "Importou CSV: {$message}");
 
-        return back()->with('success', $message);
+        return back()
+            ->with('success', $message)
+            ->with('import_errors', $errorDetails);
     }
 
     public function start(Request $request)
@@ -178,10 +197,19 @@ class ImportController extends Controller
             'errors' => 0,
         ];
 
-        DB::transaction(function () use ($rows, &$chunkStats) {
+        $errorDetails = &$progress['error_details'];
+        if (!isset($errorDetails)) {
+            $errorDetails = [];
+        }
+        $currentLine = $startLine;
+
+        DB::transaction(function () use ($rows, &$chunkStats, &$errorDetails, &$currentLine) {
             foreach ($rows as $row) {
+                $currentLine++;
+
                 if (count($row) < 3 || empty(trim($row[0])) || empty(trim($row[2]))) {
                     $chunkStats['errors']++;
+                    $this->collectError($errorDetails, $currentLine, $row[0] ?? '', $row[2] ?? '', 'Código ou EAN vazio');
                     continue;
                 }
 
@@ -214,6 +242,7 @@ class ImportController extends Controller
                     }
                 } catch (\Exception $e) {
                     $chunkStats['errors']++;
+                    $this->collectError($errorDetails, $currentLine, $row[0] ?? '', $row[2] ?? '', $e->getMessage());
                     \Log::warning('Erro ao importar linha', [
                         'code' => $row[0] ?? '',
                         'ean' => $row[2] ?? '',
@@ -298,6 +327,7 @@ class ImportController extends Controller
             'created_barcodes' => $progress['created_barcodes'] ?? 0,
             'skipped_barcodes' => $progress['skipped_barcodes'] ?? 0,
             'errors' => $progress['errors'] ?? 0,
+            'error_details' => $progress['error_details'] ?? [],
         ];
     }
 
@@ -316,12 +346,13 @@ class ImportController extends Controller
         return $msg;
     }
 
-    private function processChunk(array $chunk, array &$stats): void
+    private function processChunk(array $chunk, array &$stats, array &$errorDetails = null): void
     {
-        DB::transaction(function () use ($chunk, &$stats) {
+        DB::transaction(function () use ($chunk, &$stats, &$errorDetails) {
             foreach ($chunk as $row) {
                 if (empty($row['code']) || empty($row['ean'])) {
                     $stats['errors']++;
+                    $this->collectError($errorDetails, $row['line'] ?? 0, $row['code'] ?? '', $row['ean'] ?? '', 'Código ou EAN vazio');
                     continue;
                 }
 
@@ -354,6 +385,7 @@ class ImportController extends Controller
                     }
                 } catch (\Exception $e) {
                     $stats['errors']++;
+                    $this->collectError($errorDetails, $row['line'] ?? 0, $row['code'] ?? '', $row['ean'] ?? '', $e->getMessage());
                     \Log::warning('Erro ao importar linha', [
                         'code' => $row['code'],
                         'ean' => $row['ean'],
@@ -362,6 +394,18 @@ class ImportController extends Controller
                 }
             }
         });
+    }
+
+    private function collectError(?array &$errorDetails, int $line, string $code, string $ean, string $reason): void
+    {
+        if ($errorDetails !== null && count($errorDetails) < self::MAX_ERROR_DETAILS) {
+            $errorDetails[] = [
+                'line' => $line,
+                'code' => $code,
+                'ean' => $ean,
+                'reason' => $reason,
+            ];
+        }
     }
 
     private function keepAlive(): void

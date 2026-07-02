@@ -10,6 +10,38 @@
     </a>
 </div>
 
+@if (session('import_errors'))
+    <div class="card mb-3 border-danger">
+        <div class="card-header text-bg-danger">
+            <i class="bi bi-exclamation-triangle"></i> Detalhes dos erros ({{ count(session('import_errors')) }})
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-sm table-bordered mb-0">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Linha</th>
+                            <th>Código</th>
+                            <th>EAN</th>
+                            <th>Motivo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (session('import_errors') as $err)
+                            <tr>
+                                <td>{{ $err['line'] }}</td>
+                                <td>{{ $err['code'] }}</td>
+                                <td>{{ $err['ean'] }}</td>
+                                <td class="text-danger">{{ $err['reason'] }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+@endif
+
 <div class="row">
     <div class="col-md-8">
         <div class="card mb-3">
@@ -279,6 +311,23 @@ function showResult(p) {
         title.textContent = 'Importação concluída com sucesso';
     }
 
+    var errorsHtml = '';
+    if (p.error_details && p.error_details.length > 0) {
+        var rows = p.error_details.map(function(e) {
+            return '<tr><td>' + e.line + '</td><td>' + e.code + '</td><td>' + e.ean + '</td><td class="text-danger">' + e.reason + '</td></tr>';
+        }).join('');
+        errorsHtml =
+            '<div class="mt-3">' +
+            '<button class="btn btn-sm btn-outline-danger w-100" type="button" data-bs-toggle="collapse" data-bs-target="#errorDetails">' +
+            '<i class="bi bi-exclamation-triangle"></i> Ver detalhes dos ' + p.errors + ' erro(s)' +
+            '</button>' +
+            '<div class="collapse mt-2" id="errorDetails">' +
+            '<div class="table-responsive" style="max-height: 250px; overflow-y: auto;">' +
+            '<table class="table table-sm table-bordered mb-0">' +
+            '<thead class="table-secondary"><tr><th>Linha</th><th>Código</th><th>EAN</th><th>Motivo</th></tr></thead>' +
+            '<tbody>' + rows + '</tbody></table></div></div></div>';
+    }
+
     body.innerHTML =
         '<p>' + p.message + '</p>' +
         '<table class="table table-sm table-bordered mb-0">' +
@@ -289,7 +338,8 @@ function showResult(p) {
         '<tr><td>Códigos de barras criados</td><td><strong>' + p.created_barcodes + '</strong></td></tr>' +
         '<tr><td>Códigos de barras pulados</td><td><strong>' + p.skipped_barcodes + '</strong></td></tr>' +
         (p.errors > 0 ? '<tr><td>Erros</td><td><strong class="text-danger">' + p.errors + '</strong></td></tr>' : '') +
-        '</table>';
+        '</table>' +
+        errorsHtml;
 
     var modal = new bootstrap.Modal(document.getElementById('result-modal'));
     modal.show();

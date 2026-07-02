@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <title>@yield('title', 'Datacheck - Medeiros')</title>
+    <title>@yield('title', 'Datacheck - ' . ($companySetting->company_name ?? 'Medeiros'))</title>
     <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -185,8 +185,12 @@
 
         <aside class="sidebar" id="sidebar">
             <a class="sidebar-brand" href="{{ route('admin.dashboard') }}">
-                <img src="{{ asset('favicon.png') }}" alt="Datacheck">
-                Datacheck
+                @if ($companySetting && $companySetting->company_icon)
+                    <img src="{{ asset('storage/' . $companySetting->company_icon) }}" alt="Datacheck">
+                @else
+                    <img src="{{ asset('favicon.png') }}" alt="Datacheck">
+                @endif
+                Datacheck - {{ $companySetting->company_name ?? 'Medeiros' }}
             </a>
             <nav class="sidebar-nav">
                 @if (in_array(strtoupper(auth()->user()->position ?? ''), ['ADMIN']))
@@ -266,6 +270,12 @@
                         <a class="nav-link {{ request()->routeIs('admin.audit.*') ? 'active' : '' }}"
                            href="{{ route('admin.audit.index') }}">
                             <i class="bi bi-journal-text"></i> Auditoria
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}"
+                           href="{{ route('admin.settings.index') }}">
+                            <i class="bi bi-gear-wide-connected"></i> Configurações
                         </a>
                     </div>
                 @endif
