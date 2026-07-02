@@ -37,6 +37,9 @@ class RecolhimentoService
             'recolhido_em' => now(),
             'recolhido_quantidade' => $quantidade,
             'recolhido_user_id' => $userId,
+            'datahora' => now(),
+            'user_id' => $userId,
+            'quantidade' => $quantidade,
         ]);
 
         return $coleta->fresh();

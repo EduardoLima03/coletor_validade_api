@@ -16,6 +16,7 @@ class RecolhimentoController extends Controller
     public function produtos(int $lojaId): JsonResponse
     {
         $produtos = $this->recolhimentoService->produtosParaRecolher($lojaId);
+        $valorTotal = $produtos->sum(fn($c) => ($c->barcode?->product?->custo ?? 0) * (float) $c->quantidade);
 
         return response()->json([
             'produtos' => $produtos->map(fn($c) => [
@@ -27,8 +28,10 @@ class RecolhimentoController extends Controller
                 'data_validade' => $c->data_validade?->format('Y-m-d'),
                 'dias_a_vencer' => $c->dias_a_vencer,
                 'area_auditoria' => $c->areaAuditoria?->nome,
+                'custo' => (float) ($c->barcode?->product?->custo ?? 0),
             ]),
             'total' => $produtos->count(),
+            'valor_total' => round($valorTotal, 2),
         ]);
     }
 
