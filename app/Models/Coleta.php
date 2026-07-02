@@ -21,6 +21,7 @@ class Coleta extends Model
         "datahora" => "datetime",
         "deleted_at" => "datetime",
         "recolhido_em" => "datetime",
+        "quantidade" => "decimal:2",
         "recolhido_quantidade" => "decimal:2",
     ];
 

@@ -202,7 +202,7 @@ class ColetaController extends Controller
 
         $validated = $request->validate([
             "area_auditoria_id" => "nullable|exists:areas_auditoria,id",
-            "quantidade" => "required|string|max:50",
+            "quantidade" => "required|numeric|min:0",
             "unidade" => "nullable|string|max:10",
             "data_validade" => "required|date",
         ]);

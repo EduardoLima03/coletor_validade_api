@@ -28,7 +28,7 @@ class ColetaController extends Controller
             "loja_id" => "required|exists:lojas,id",
             "area_auditoria_id" => "nullable|exists:areas_auditoria,id",
             "ean" => "required|string|max:20",
-            "quantidade" => "required|string|max:50",
+            "quantidade" => "required|numeric|min:0",
             "unidade" => "nullable|string|max:10",
             "validade" => "required|date",
             "descricao" => "nullable|string|max:255",
@@ -59,7 +59,7 @@ class ColetaController extends Controller
             if ($action === "replace" && $existing) {
                 $oldQty = $existing->quantidade;
 
-                if ($validated["quantidade"] == "0" || $validated["quantidade"] === "0") {
+                if ((float) $validated["quantidade"] == 0) {
                     $existing->delete();
                     $lojaNome = $this->lojaNome($validated['loja_id']);
                     AuditLog::log(
@@ -95,7 +95,7 @@ class ColetaController extends Controller
             }
 
             if ($action === "add" && $existing) {
-                if ($validated["quantidade"] == "0" || $validated["quantidade"] === "0") {
+                if ((float) $validated["quantidade"] == 0) {
                     $existing->delete();
                     $lojaNome = $this->lojaNome($validated['loja_id']);
                     AuditLog::log(
@@ -115,12 +115,8 @@ class ColetaController extends Controller
                         "unidade" => $validated["unidade"] ?? "un",
                     ]);
                 } else {
-                    $oldQty = $existing->quantidade;
-                    if (is_numeric($oldQty) && is_numeric($validated["quantidade"])) {
-                        $newQty = $oldQty + $validated["quantidade"];
-                    } else {
-                        $newQty = $validated["quantidade"];
-                    }
+                    $oldQty = (float) $existing->quantidade;
+                    $newQty = $oldQty + (float) $validated["quantidade"];
                     $existing->update([
                         "quantidade" => $newQty,
                         "unidade" => $validated["unidade"] ?? "un",
@@ -172,12 +168,12 @@ class ColetaController extends Controller
         $coleta = Coleta::findOrFail($id);
 
         $validated = $request->validate([
-            "quantidade" => "required|string|max:50",
+            "quantidade" => "required|numeric|min:0",
             "unidade" => "nullable|string|max:10",
             "validade" => "required|date",
         ]);
 
-        if ($validated["quantidade"] === "0" || $validated["quantidade"] == 0) {
+        if ((float) $validated["quantidade"] == 0) {
             $coleta->delete();
 
             $lojaNome = $this->lojaNome($coleta->loja_id);
