@@ -80,6 +80,7 @@ class ColetaController extends Controller
                     "quantidade" => $validated["quantidade"],
                     "unidade" => $validated["unidade"] ?? "un",
                     "user_id" => auth()->id(),
+                    "datahora" => now(),
                 ]);
 
                 $lojaNome = $this->lojaNome($validated['loja_id']);
@@ -113,6 +114,7 @@ class ColetaController extends Controller
                     $existing->update([
                         "quantidade" => $validated["quantidade"],
                         "unidade" => $validated["unidade"] ?? "un",
+                        "datahora" => now(),
                     ]);
                 } else {
                     $oldQty = (float) $existing->quantidade;
@@ -120,6 +122,7 @@ class ColetaController extends Controller
                     $existing->update([
                         "quantidade" => $newQty,
                         "unidade" => $validated["unidade"] ?? "un",
+                        "datahora" => now(),
                     ]);
                 }
 
