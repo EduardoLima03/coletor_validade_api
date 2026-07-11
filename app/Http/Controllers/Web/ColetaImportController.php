@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\AreaAuditoria;
 use App\Models\AuditLog;
-use App\Models\Barcode;
 use App\Models\Coleta;
 use App\Models\Loja;
 use Illuminate\Http\Request;
@@ -151,9 +150,6 @@ class ColetaImportController extends Controller
                     }
 
                     $ean = trim($row[4] ?? '');
-                    $csvDescricao = trim($row[3] ?? '');
-                    $barcode = Barcode::where('ean', $ean)->with('product')->first();
-                    $descricao = $barcode?->product?->description ?? ($csvDescricao ?: 'Produto não encontrado');
 
                     $coleta = Coleta::where('loja_id', $loja->id)
                         ->where('area_auditoria_id', $areaAuditoria?->id)
@@ -164,14 +160,12 @@ class ColetaImportController extends Controller
                     if ($coleta) {
                         $coleta->update([
                             'quantidade' => $quantidade,
-                            'descricao' => $descricao,
                         ]);
                     } else {
                         Coleta::create([
                             'loja_id' => $loja->id,
                             'area_auditoria_id' => $areaAuditoria?->id,
                             'user_id' => auth()->id(),
-                            'descricao' => $descricao,
                             'ean' => $ean,
                             'quantidade' => $quantidade,
                             'data_validade' => $dataValidade,
@@ -309,9 +303,6 @@ class ColetaImportController extends Controller
                     }
 
                     $ean = trim($row[4] ?? '');
-                    $csvDescricao = trim($row[3] ?? '');
-                    $barcode = Barcode::where('ean', $ean)->with('product')->first();
-                    $descricao = $barcode?->product?->description ?? ($csvDescricao ?: 'Produto não encontrado');
 
                     if ($stats['total'] % 500 === 0) {
                         DB::reconnect();
@@ -326,7 +317,6 @@ class ColetaImportController extends Controller
                     if ($coleta) {
                         $coleta->update([
                             'quantidade' => $quantidade,
-                            'descricao' => $descricao,
                         ]);
                         $stats['importadas']++;
                     } else {
@@ -334,7 +324,6 @@ class ColetaImportController extends Controller
                             'loja_id' => $loja->id,
                             'area_auditoria_id' => $areaAuditoria?->id,
                             'user_id' => auth()->id(),
-                            'descricao' => $descricao,
                             'ean' => $ean,
                             'quantidade' => $quantidade,
                             'data_validade' => $dataValidade,

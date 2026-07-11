@@ -11,7 +11,7 @@ class Coleta extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        "loja_id", "area_auditoria_id", "user_id", "descricao",
+        "loja_id", "area_auditoria_id", "user_id",
         "ean", "quantidade", "unidade", "data_validade", "datahora",
         "recolhido_em", "recolhido_quantidade", "recolhido_user_id",
     ];
@@ -54,7 +54,7 @@ class Coleta extends Model
 
     public function getProductNameAttribute(): ?string
     {
-        return $this->barcode?->product?->description ?? $this->descricao;
+        return $this->barcode?->product?->description ?? 'Produto não encontrado';
     }
 
     public function getDiasAVencerAttribute()

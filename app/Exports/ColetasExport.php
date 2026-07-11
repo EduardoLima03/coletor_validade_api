@@ -79,7 +79,9 @@ class ColetasExport implements FromQuery, WithHeadings, WithMapping, WithStyles
         }
 
         if ($this->descricao) {
-            $query->where("descricao", "like", "%{$this->descricao}%");
+            $query->whereHas("barcode.product", function ($q) {
+                $q->where("description", "like", "%{$this->descricao}%");
+            });
         }
 
         if ($this->areaAuditoriaId) {

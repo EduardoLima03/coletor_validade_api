@@ -63,7 +63,9 @@ class ColetaController extends Controller
         }
 
         if ($request->filled("descricao")) {
-            $query->where("coletas.descricao", "like", "%{$request->descricao}%");
+            $query->whereHas("barcode.product", function ($q) use ($request) {
+                $q->where("description", "like", "%{$request->descricao}%");
+            });
         }
 
         if ($request->filled("area_auditoria_id")) {
@@ -83,7 +85,7 @@ class ColetaController extends Controller
             'loja' => 'lojas.nome',
             'auditor' => 'users.name',
             'setor' => 'areas_auditoria.nome',
-            'descricao' => 'coletas.descricao',
+            'descricao' => 'products.description',
             'ean' => 'coletas.ean',
             'quantidade' => 'coletas.quantidade',
             'unidade' => 'coletas.unidade',
@@ -104,6 +106,8 @@ class ColetaController extends Controller
         $query->leftJoin('lojas', 'coletas.loja_id', '=', 'lojas.id')
               ->leftJoin('users', 'coletas.user_id', '=', 'users.id')
               ->leftJoin('areas_auditoria', 'coletas.area_auditoria_id', '=', 'areas_auditoria.id')
+              ->leftJoin('barcodes', 'coletas.ean', '=', 'barcodes.ean')
+              ->leftJoin('products', 'barcodes.product_id', '=', 'products.id')
               ->select('coletas.*');
 
         $query->orderBy($sortMap[$sort], $direction);

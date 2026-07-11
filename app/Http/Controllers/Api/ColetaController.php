@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Coleta;
-use App\Models\Barcode;
 use App\Models\Loja;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,11 +30,9 @@ class ColetaController extends Controller
             "quantidade" => "required|numeric|min:0",
             "unidade" => "nullable|string|max:10",
             "validade" => "required|date",
-            "descricao" => "nullable|string|max:255",
             "action" => "nullable|in:replace,add",
         ]);
 
-        $descricao = $validated["descricao"] ?? $this->buscarDescricao($validated["ean"]);
         $action = $validated["action"] ?? null;
 
         $areaAuditoriaId = $validated["area_auditoria_id"] ?? null;
@@ -55,7 +52,7 @@ class ColetaController extends Controller
             ], 409);
         }
 
-        $coleta = DB::transaction(function () use ($validated, $descricao, $action, $existing, $areaAuditoriaId) {
+        $coleta = DB::transaction(function () use ($validated, $action, $existing, $areaAuditoriaId) {
             if ($action === "replace" && $existing) {
                 $oldQty = $existing->quantidade;
 
@@ -142,7 +139,6 @@ class ColetaController extends Controller
                 "loja_id" => $validated["loja_id"],
                 "area_auditoria_id" => $areaAuditoriaId,
                 "user_id" => auth()->id(),
-                "descricao" => $descricao,
                 "ean" => $validated["ean"],
                 "quantidade" => $validated["quantidade"],
                 "unidade" => $validated["unidade"] ?? "un",
@@ -262,12 +258,4 @@ class ColetaController extends Controller
         return response()->json($coleta->load("loja", "user", "areaAuditoria", "barcode.product"));
     }
 
-    private function buscarDescricao($ean)
-    {
-        $barcode = Barcode::where("ean", $ean)->with("product")->first();
-        if ($barcode && $barcode->product) {
-            return $barcode->product->description;
-        }
-        return "Produto não encontrado";
-    }
 }
