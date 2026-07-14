@@ -103,11 +103,6 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
         Route::get('/auditoria/{id}', [App\Http\Controllers\Web\AuditController::class, 'show'])
             ->name('audit.show');
 
-        Route::resource('recolhimento-regras', App\Http\Controllers\Web\RecolhimentoRegraController::class)
-            ->names(['index' => 'recolhimento-regras.index', 'create' => 'recolhimento-regras.create',
-                     'store' => 'recolhimento-regras.store', 'edit' => 'recolhimento-regras.edit',
-                     'update' => 'recolhimento-regras.update', 'destroy' => 'recolhimento-regras.destroy']);
-
         Route::get('/configuracoes', [App\Http\Controllers\Web\SettingController::class, 'index'])
             ->name('settings.index');
         Route::put('/configuracoes', [App\Http\Controllers\Web\SettingController::class, 'update'])

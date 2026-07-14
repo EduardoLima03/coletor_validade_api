@@ -17,6 +17,7 @@ class RecolhimentoService
         }
 
         return Coleta::with(['loja', 'barcode.product', 'areaAuditoria'])
+            ->select('coletas.*')
             ->where('coletas.loja_id', $lojaId)
             ->disponiveisParaRecolhimento($dias)
             ->leftJoin('barcodes', 'coletas.ean', '=', 'barcodes.ean')

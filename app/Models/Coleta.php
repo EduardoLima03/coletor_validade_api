@@ -12,7 +12,7 @@ class Coleta extends Model
 
     protected $fillable = [
         "loja_id", "area_auditoria_id", "user_id",
-        "ean", "quantidade", "unidade", "data_validade", "datahora",
+        "ean", "descricao", "quantidade", "unidade", "data_validade", "datahora",
         "recolhido_em", "recolhido_quantidade", "recolhido_user_id",
     ];
 
@@ -54,7 +54,9 @@ class Coleta extends Model
 
     public function getProductNameAttribute(): ?string
     {
-        return $this->barcode?->product?->description ?? 'Produto não encontrado';
+        return $this->barcode?->product?->description
+            ?? $this->descricao
+            ?? "EAN: {$this->ean}";
     }
 
     public function getDiasAVencerAttribute()

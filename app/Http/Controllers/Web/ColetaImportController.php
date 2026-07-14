@@ -151,6 +151,8 @@ class ColetaImportController extends Controller
 
                     $ean = trim($row[4] ?? '');
 
+                    $descricao = trim($row[3] ?? '');
+
                     $coleta = Coleta::where('loja_id', $loja->id)
                         ->where('area_auditoria_id', $areaAuditoria?->id)
                         ->where('ean', $ean)
@@ -160,6 +162,7 @@ class ColetaImportController extends Controller
                     if ($coleta) {
                         $coleta->update([
                             'quantidade' => $quantidade,
+                            'descricao' => $descricao ?: $coleta->descricao,
                         ]);
                     } else {
                         Coleta::create([
@@ -167,6 +170,7 @@ class ColetaImportController extends Controller
                             'area_auditoria_id' => $areaAuditoria?->id,
                             'user_id' => auth()->id(),
                             'ean' => $ean,
+                            'descricao' => $descricao ?: null,
                             'quantidade' => $quantidade,
                             'data_validade' => $dataValidade,
                         ]);
@@ -303,6 +307,7 @@ class ColetaImportController extends Controller
                     }
 
                     $ean = trim($row[4] ?? '');
+                    $descricao = trim($row[3] ?? '');
 
                     if ($stats['total'] % 500 === 0) {
                         DB::reconnect();
@@ -317,6 +322,7 @@ class ColetaImportController extends Controller
                     if ($coleta) {
                         $coleta->update([
                             'quantidade' => $quantidade,
+                            'descricao' => $descricao ?: $coleta->descricao,
                         ]);
                         $stats['importadas']++;
                     } else {
@@ -325,6 +331,7 @@ class ColetaImportController extends Controller
                             'area_auditoria_id' => $areaAuditoria?->id,
                             'user_id' => auth()->id(),
                             'ean' => $ean,
+                            'descricao' => $descricao ?: null,
                             'quantidade' => $quantidade,
                             'data_validade' => $dataValidade,
                         ]);

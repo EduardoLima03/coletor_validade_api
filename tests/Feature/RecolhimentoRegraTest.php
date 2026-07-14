@@ -83,7 +83,7 @@ class RecolhimentoRegraTest extends TestCase
 
     public function test_usuario_nao_admin_nao_pode_gerenciar_regras()
     {
-        $user = User::factory()->create(['position' => 'GERENCIA']);
+        $user = User::factory()->create(['position' => 'COLETOR']);
 
         $response = $this->actingAs($user)
             ->get(route('admin.recolhimento-regras.index'));
