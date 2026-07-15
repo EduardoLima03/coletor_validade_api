@@ -35,6 +35,12 @@ services:
       MYSQL_USER: datacheck
       MYSQL_PASSWORD: senha_forte
       MYSQL_ROOT_PASSWORD: senha_root_forte
+    command:
+      - --max_allowed_packet=256M
+      - --wait_timeout=300
+      - --interactive_timeout=300
+      - --net_read_timeout=120
+      - --net_write_timeout=120
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:

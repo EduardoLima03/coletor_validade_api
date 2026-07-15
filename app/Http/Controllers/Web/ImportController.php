@@ -9,13 +9,14 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class ImportController extends Controller
 {
     private const CACHE_PREFIX = 'import_progress_';
     private const CHUNK_SIZE = 200;
+    private const BATCH_SIZE = 50;
     private const MAX_ERROR_DETAILS = 100;
+    private const MAX_RETRIES = 3;
 
     public function showForm()
     {
@@ -24,9 +25,6 @@ class ImportController extends Controller
 
     public function processFile(Request $request)
     {
-        set_time_limit(0);
-        ini_set('memory_limit', '512M');
-
         $filePath = $this->resolveFilePath($request);
 
         if (!$filePath || !file_exists($filePath)) {
@@ -36,7 +34,19 @@ class ImportController extends Controller
                 : back()->with('error', $msg);
         }
 
+        return $this->processFileSync($filePath, $request);
+    }
+
+    private function processFileSync(string $filePath, Request $request)
+    {
+        set_time_limit(0);
+        @ini_set('memory_limit', '512M');
+
         $handle = fopen($filePath, 'r');
+        if (!$handle) {
+            return back()->with('error', 'Não foi possível abrir o arquivo.');
+        }
+
         $header = fgetcsv($handle, 0, ',', '"');
 
         if (!$header || count($header) < 3) {
@@ -57,22 +67,15 @@ class ImportController extends Controller
         ];
 
         $errorDetails = [];
-        $lineNumber = 1;
         $chunk = [];
+        $lineNumber = 1;
 
         while (($row = fgetcsv($handle, 0, ',', '"')) !== false) {
             $lineNumber++;
 
             if (count($row) < 3) {
                 $stats['errors']++;
-                if (count($errorDetails) < self::MAX_ERROR_DETAILS) {
-                    $errorDetails[] = [
-                        'line' => $lineNumber,
-                        'code' => $row[0] ?? '',
-                        'ean' => $row[2] ?? '',
-                        'reason' => 'Linha com menos de 3 colunas',
-                    ];
-                }
+                $this->collectError($errorDetails, $lineNumber, $row[0] ?? '', $row[2] ?? '', 'Linha com menos de 3 colunas');
                 continue;
             }
 
@@ -118,8 +121,6 @@ class ImportController extends Controller
 
     public function start(Request $request)
     {
-        set_time_limit(0);
-
         $filePath = $this->resolveFilePath($request);
 
         if (!$filePath || !file_exists($filePath)) {
@@ -147,15 +148,14 @@ class ImportController extends Controller
             'skipped_barcodes' => 0,
             'errors' => 0,
             'message' => null,
-        ], 3600);
+            'error_details' => [],
+        ], 7200);
 
         return response()->json(['total' => $total]);
     }
 
     public function chunk()
     {
-        set_time_limit(0);
-
         $progress = Cache::get($this->cacheKey());
 
         if (!$progress) {
@@ -166,23 +166,39 @@ class ImportController extends Controller
             return response()->json(['done' => true, 'progress' => $this->buildProgressResponse($progress)]);
         }
 
-        $handle = fopen($progress['file_path'], 'r');
-
-        for ($i = 0; $i < $progress['current_line']; $i++) {
-            fgets($handle);
+        try {
+            $result = $this->processNextChunk($progress);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Erro ao processar lote: ' . $e->getMessage(),
+                'progress' => $this->buildProgressResponse($progress),
+            ], 500);
         }
+
+        return response()->json($result);
+    }
+
+    private function processNextChunk(array &$progress): array
+    {
+        $file = new \SplFileObject($progress['file_path'], 'r');
+        $file->seek($progress['current_line']);
 
         $rows = [];
         $lineCount = 0;
         $startLine = $progress['current_line'];
 
-        while ($lineCount < self::CHUNK_SIZE && ($row = fgetcsv($handle, 0, ',', '"')) !== false) {
-            $rows[] = $row;
-            $lineCount++;
+        while ($lineCount < self::CHUNK_SIZE && !$file->eof()) {
+            $row = $file->fgetcsv(',', '"');
+            if ($row !== false && !(count($row) === 1 && $row[0] === null)) {
+                $rows[] = $row;
+                $lineCount++;
+            } else {
+                $file->next();
+            }
         }
 
-        $eof = feof($handle);
-        fclose($handle);
+        $eof = $file->eof();
+        $file = null;
 
         $this->keepAlive();
 
@@ -198,56 +214,10 @@ class ImportController extends Controller
         if (!isset($errorDetails)) {
             $errorDetails = [];
         }
+
         $currentLine = $startLine;
 
-        DB::transaction(function () use ($rows, &$chunkStats, &$errorDetails, &$currentLine) {
-            foreach ($rows as $row) {
-                $currentLine++;
-
-                if (count($row) < 3 || empty(trim($row[0])) || empty(trim($row[2]))) {
-                    $chunkStats['errors']++;
-                    $this->collectError($errorDetails, $currentLine, $row[0] ?? '', $row[2] ?? '', 'Código ou EAN vazio');
-                    continue;
-                }
-
-                try {
-                    $product = Product::updateOrCreate(
-                        ['code' => trim($row[0])],
-                        [
-                            'description' => trim($row[1]),
-                            'custo' => isset($row[3]) ? trim($row[3]) : 0,
-                        ]
-                    );
-
-                    if ($product->wasRecentlyCreated) {
-                        $chunkStats['created_products']++;
-                    } elseif ($product->wasChanged()) {
-                        $chunkStats['updated_products']++;
-                    }
-
-                    $barcode = Barcode::firstOrNew(['ean' => trim($row[2])]);
-                    $barcode->product_id = $product->id;
-
-                    if (!$barcode->exists) {
-                        $barcode->save();
-                        $chunkStats['created_barcodes']++;
-                    } else {
-                        if ($barcode->isDirty()) {
-                            $barcode->save();
-                        }
-                        $chunkStats['skipped_barcodes']++;
-                    }
-                } catch (\Exception $e) {
-                    $chunkStats['errors']++;
-                    $this->collectError($errorDetails, $currentLine, $row[0] ?? '', $row[2] ?? '', $e->getMessage());
-                    \Log::warning('Erro ao importar linha', [
-                        'code' => $row[0] ?? '',
-                        'ean' => $row[2] ?? '',
-                        'erro' => $e->getMessage(),
-                    ]);
-                }
-            }
-        });
+        $this->processRowsInBatches($rows, $chunkStats, $errorDetails, $currentLine);
 
         $progress['current_line'] = $startLine + count($rows);
         $progress['processed'] += count($rows);
@@ -267,12 +237,111 @@ class ImportController extends Controller
             AuditLog::log('import', 'csv', 0, "Importou CSV: {$progress['message']}");
         }
 
-        Cache::put($this->cacheKey(), $progress, 3600);
+        Cache::put($this->cacheKey(), $progress, 7200);
 
-        return response()->json([
+        return [
             'done' => $done,
             'progress' => $this->buildProgressResponse($progress),
-        ]);
+        ];
+    }
+
+    private function processRowsInBatches(array $rows, array &$stats, array &$errorDetails, int &$currentLine): void
+    {
+        foreach (array_chunk($rows, self::BATCH_SIZE) as $batchIndex => $batch) {
+            $this->processBatchWithRetry($batch, $stats, $errorDetails, $currentLine);
+        }
+    }
+
+    private function processBatchWithRetry(array $batch, array &$stats, array &$errorDetails, int &$currentLine): void
+    {
+        $attempts = 0;
+        $lastException = null;
+
+        while ($attempts < self::MAX_RETRIES) {
+            $attempts++;
+            try {
+                DB::transaction(function () use ($batch, &$stats, &$errorDetails, &$currentLine) {
+                    foreach ($batch as $row) {
+                        $currentLine++;
+                        $this->processRow($row, $stats, $errorDetails, $currentLine);
+                    }
+                });
+                $lastException = null;
+                break;
+            } catch (\Exception $e) {
+                $lastException = $e;
+                $currentLine -= count($batch);
+                if ($attempts < self::MAX_RETRIES) {
+                    usleep(500000 * $attempts);
+                    $this->keepAlive();
+                    DB::reconnect();
+                }
+            }
+        }
+
+        if ($lastException) {
+            foreach ($batch as $row) {
+                $stats['errors']++;
+                $currentLine++;
+                $this->collectError(
+                    $errorDetails,
+                    $currentLine,
+                    $row[0] ?? '',
+                    $row[2] ?? '',
+                    'Falha após ' . self::MAX_RETRIES . ' tentativas: ' . $lastException->getMessage()
+                );
+            }
+        }
+    }
+
+    private function processRow(array $row, array &$stats, array &$errorDetails, int $currentLine): void
+    {
+        if (count($row) < 3 || empty(trim($row[0] ?? '')) || empty(trim($row[2] ?? ''))) {
+            $stats['errors']++;
+            $this->collectError($errorDetails, $currentLine, $row[0] ?? '', $row[2] ?? '', 'Código ou EAN vazio');
+            return;
+        }
+
+        try {
+            $product = Product::updateOrCreate(
+                ['code' => trim($row[0])],
+                [
+                    'description' => trim($row[1]),
+                    'custo' => isset($row[3]) ? trim($row[3]) : 0,
+                ]
+            );
+
+            if ($product->wasRecentlyCreated) {
+                $stats['created_products']++;
+            } elseif ($product->wasChanged()) {
+                $stats['updated_products']++;
+            }
+
+            $ean = trim($row[2]);
+
+            $existing = Barcode::where('ean', $ean)->first();
+
+            if ($existing) {
+                if ($existing->product_id !== $product->id) {
+                    $existing->update(['product_id' => $product->id]);
+                }
+                $stats['skipped_barcodes']++;
+            } else {
+                Barcode::create([
+                    'ean' => $ean,
+                    'product_id' => $product->id,
+                ]);
+                $stats['created_barcodes']++;
+            }
+        } catch (\Exception $e) {
+            $stats['errors']++;
+            $this->collectError($errorDetails, $currentLine, $row[0] ?? '', $row[2] ?? '', $e->getMessage());
+            \Log::warning('Erro ao importar linha', [
+                'code' => $row[0] ?? '',
+                'ean' => $row[2] ?? '',
+                'erro' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function progress()
@@ -300,7 +369,7 @@ class ImportController extends Controller
     {
         if ($request->hasFile('csv_file')) {
             $path = $request->file('csv_file')->store('imports');
-            return Storage::path($path);
+            return \Illuminate\Support\Facades\Storage::path($path);
         }
 
         $default = base_path('VALIDADE.csv');
@@ -343,54 +412,65 @@ class ImportController extends Controller
         return $msg;
     }
 
-    private function processChunk(array $chunk, array &$stats, array &$errorDetails = null): void
+    private function processChunk(array $chunk, array &$stats, array &$errorDetails): void
     {
-        DB::transaction(function () use ($chunk, &$stats, &$errorDetails) {
-            foreach ($chunk as $row) {
-                if (empty($row['code']) || empty($row['ean'])) {
-                    $stats['errors']++;
-                    $this->collectError($errorDetails, $row['line'] ?? 0, $row['code'] ?? '', $row['ean'] ?? '', 'Código ou EAN vazio');
-                    continue;
-                }
-
-                try {
-                    $product = Product::updateOrCreate(
-                        ['code' => $row['code']],
-                        [
-                            'description' => $row['description'],
-                            'custo' => $row['custo'] ?? 0,
-                        ]
-                    );
-
-                    if ($product->wasRecentlyCreated) {
-                        $stats['created_products']++;
-                    } elseif ($product->wasChanged()) {
-                        $stats['updated_products']++;
-                    }
-
-                    $barcode = Barcode::firstOrNew(['ean' => $row['ean']]);
-                    $barcode->product_id = $product->id;
-
-                    if (!$barcode->exists) {
-                        $barcode->save();
-                        $stats['created_barcodes']++;
-                    } else {
-                        if ($barcode->isDirty()) {
-                            $barcode->save();
+        foreach (array_chunk($chunk, self::BATCH_SIZE) as $batch) {
+            try {
+                DB::transaction(function () use ($batch, &$stats, &$errorDetails) {
+                    foreach ($batch as $row) {
+                        if (empty($row['code']) || empty($row['ean'])) {
+                            $stats['errors']++;
+                            $this->collectError($errorDetails, $row['line'] ?? 0, $row['code'] ?? '', $row['ean'] ?? '', 'Código ou EAN vazio');
+                            continue;
                         }
-                        $stats['skipped_barcodes']++;
+
+                        try {
+                            $product = Product::updateOrCreate(
+                                ['code' => $row['code']],
+                                [
+                                    'description' => $row['description'],
+                                    'custo' => $row['custo'] ?? 0,
+                                ]
+                            );
+
+                            if ($product->wasRecentlyCreated) {
+                                $stats['created_products']++;
+                            } elseif ($product->wasChanged()) {
+                                $stats['updated_products']++;
+                            }
+
+                            $existing = Barcode::where('ean', $row['ean'])->first();
+
+                            if ($existing) {
+                                if ($existing->product_id !== $product->id) {
+                                    $existing->update(['product_id' => $product->id]);
+                                }
+                                $stats['skipped_barcodes']++;
+                            } else {
+                                Barcode::create([
+                                    'ean' => $row['ean'],
+                                    'product_id' => $product->id,
+                                ]);
+                                $stats['created_barcodes']++;
+                            }
+                        } catch (\Exception $e) {
+                            $stats['errors']++;
+                            $this->collectError($errorDetails, $row['line'] ?? 0, $row['code'] ?? '', $row['ean'] ?? '', $e->getMessage());
+                            \Log::warning('Erro ao importar linha', [
+                                'code' => $row['code'],
+                                'ean' => $row['ean'],
+                                'erro' => $e->getMessage(),
+                            ]);
+                        }
                     }
-                } catch (\Exception $e) {
+                });
+            } catch (\Exception $e) {
+                foreach ($batch as $row) {
                     $stats['errors']++;
-                    $this->collectError($errorDetails, $row['line'] ?? 0, $row['code'] ?? '', $row['ean'] ?? '', $e->getMessage());
-                    \Log::warning('Erro ao importar linha', [
-                        'code' => $row['code'],
-                        'ean' => $row['ean'],
-                        'erro' => $e->getMessage(),
-                    ]);
+                    $this->collectError($errorDetails, $row['line'] ?? 0, $row['code'] ?? '', $row['ean'] ?? '', 'Erro no batch: ' . $e->getMessage());
                 }
             }
-        });
+        }
     }
 
     private function collectError(?array &$errorDetails, int $line, string $code, string $ean, string $reason): void
