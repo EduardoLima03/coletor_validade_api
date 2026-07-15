@@ -14,10 +14,11 @@ use Illuminate\Support\Facades\DB;
 class ColetaImportController extends Controller
 {
     private const CACHE_PREFIX = 'coleta_import_progress_';
-    private const CHUNK_SIZE = 200;
-    private const BATCH_SIZE = 50;
+    private const CHUNK_SIZE = 100;
+    private const BATCH_SIZE = 25;
     private const MAX_ERROR_DETAILS = 100;
     private const MAX_RETRIES = 3;
+    private const TIME_LIMIT_SAFETY = 5;
 
     public function showForm()
     {
@@ -76,9 +77,22 @@ class ColetaImportController extends Controller
             return response()->json(['done' => true, 'progress' => $this->buildProgressResponse($progress)]);
         }
 
+        $hasPartialProgress = false;
+        $processedBefore = $progress['processed'] ?? 0;
+
         try {
             $result = $this->processNextChunk($progress);
+            $hasPartialProgress = ($progress['processed'] ?? 0) > $processedBefore;
         } catch (\Exception $e) {
+            if ($hasPartialProgress) {
+                Cache::put($this->cacheKey(), $progress, 7200);
+                return response()->json([
+                    'done' => false,
+                    'progress' => $this->buildProgressResponse($progress),
+                    'warning' => 'Lote parcialmente processado. Continuando...',
+                ]);
+            }
+
             return response()->json([
                 'error' => 'Erro ao processar lote: ' . $e->getMessage(),
                 'progress' => $this->buildProgressResponse($progress),
@@ -90,6 +104,9 @@ class ColetaImportController extends Controller
 
     private function processNextChunk(array &$progress): array
     {
+        $startTime = time();
+        $maxTime = $this->getMaxExecutionTime();
+
         $file = new \SplFileObject($progress['file_path'], 'r');
         $file->seek($progress['current_line']);
 
@@ -105,9 +122,13 @@ class ColetaImportController extends Controller
             } else {
                 $file->next();
             }
+
+            if ($maxTime && (time() - $startTime) > ($maxTime - self::TIME_LIMIT_SAFETY)) {
+                break;
+            }
         }
 
-        $eof = $file->eof();
+        $eof = $file->eof() || empty($rows);
         $file = null;
 
         $this->keepAlive();
@@ -127,10 +148,11 @@ class ColetaImportController extends Controller
 
         $currentLine = $startLine;
 
-        $this->processRowsInBatches($rows, $loja, $chunkStats, $errorDetails, $currentLine);
+        $this->processRowsInBatches($rows, $loja, $chunkStats, $errorDetails, $currentLine, $startTime, $maxTime);
 
-        $progress['current_line'] = $startLine + count($rows);
-        $progress['processed'] += count($rows);
+        $processedCount = $currentLine - $startLine;
+        $progress['current_line'] = $startLine + $processedCount;
+        $progress['processed'] += $processedCount;
         $progress['importadas'] += $chunkStats['importadas'];
         $progress['puladas'] += $chunkStats['puladas'];
         $progress['areas_criadas'] += $chunkStats['areas_criadas'];
@@ -159,11 +181,24 @@ class ColetaImportController extends Controller
         ];
     }
 
-    private function processRowsInBatches(array $rows, Loja $loja, array &$stats, array &$errorDetails, int &$currentLine): void
+    private function getMaxExecutionTime(): int
+    {
+        $iniLimit = ini_get('max_execution_time');
+        if ($iniLimit === false || $iniLimit === '0') {
+            return 0;
+        }
+        $limit = (int) $iniLimit;
+        return $limit > 0 ? $limit : 0;
+    }
+
+    private function processRowsInBatches(array $rows, Loja $loja, array &$stats, array &$errorDetails, int &$currentLine, int $startTime = 0, int $maxTime = 0): void
     {
         $areaCache = [];
 
         foreach (array_chunk($rows, self::BATCH_SIZE) as $batch) {
+            if ($maxTime && (time() - $startTime) > ($maxTime - self::TIME_LIMIT_SAFETY)) {
+                break;
+            }
             $this->processBatchWithRetry($batch, $loja, $stats, $errorDetails, $currentLine, $areaCache);
         }
     }

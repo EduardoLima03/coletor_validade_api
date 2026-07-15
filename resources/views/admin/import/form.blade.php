@@ -283,20 +283,23 @@ function processChunks() {
         importProcessed = p.processed;
 
         updateProgress(p.percent, 'Processando... (' + p.processed + ' de ' + p.total + ')');
-        showDetail(
+        var detail =
             'Produtos criados: ' + p.created_products +
             ' | Atualizados: ' + p.updated_products +
             ' | EANs criados: ' + p.created_barcodes +
             ' | Pulados: ' + p.skipped_barcodes +
-            (p.errors > 0 ? ' | Erros: ' + p.errors : '')
-        );
+            (p.errors > 0 ? ' | Erros: ' + p.errors : '');
+        if (data.warning) {
+            detail = '⚠️ ' + data.warning + ' | ' + detail;
+        }
+        showDetail(detail);
 
         if (data.done) {
             importRunning = false;
             document.getElementById('import-overlay').classList.add('d-none');
             showResult(p);
         } else {
-            setTimeout(processChunks, 300);
+            setTimeout(processChunks, 500);
         }
     })
     .catch(function (err) {

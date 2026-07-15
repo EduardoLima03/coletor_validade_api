@@ -245,18 +245,21 @@ function processChunks() {
         var p = data.progress;
 
         updateProgress(p.percent, 'Processando... (' + p.processed + ' de ' + p.total + ')');
-        showDetail(
+        var detail =
             'Importadas: ' + p.importadas +
             ' | Areas criadas: ' + p.areas_criadas +
-            (p.erros > 0 ? ' | Erros: ' + p.erros : '')
-        );
+            (p.erros > 0 ? ' | Erros: ' + p.erros : '');
+        if (data.warning) {
+            detail = '⚠️ ' + data.warning + ' | ' + detail;
+        }
+        showDetail(detail);
 
         if (data.done) {
             importRunning = false;
             document.getElementById('import-overlay').classList.add('d-none');
             showResult(p);
         } else {
-            setTimeout(processChunks, 300);
+            setTimeout(processChunks, 500);
         }
     })
     .catch(function (err) {
