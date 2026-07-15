@@ -10,6 +10,7 @@ use App\Models\Loja;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ColetaImportController extends Controller
 {
@@ -67,6 +68,8 @@ class ColetaImportController extends Controller
 
     public function chunk()
     {
+        $this->registerFatalErrorHandler();
+
         $progress = Cache::get($this->cacheKey());
 
         if (!$progress) {
@@ -84,6 +87,16 @@ class ColetaImportController extends Controller
             $result = $this->processNextChunk($progress);
             $hasPartialProgress = ($progress['processed'] ?? 0) > $processedBefore;
         } catch (\Exception $e) {
+            Log::error('Import coleta chunk exception', [
+                'msg' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'processed' => $progress['processed'] ?? 0,
+                'total' => $progress['total'] ?? 0,
+                'current_line' => $progress['current_line'] ?? 0,
+            ]);
+
             if ($hasPartialProgress) {
                 Cache::put($this->cacheKey(), $progress, 7200);
                 return response()->json([
@@ -100,6 +113,29 @@ class ColetaImportController extends Controller
         }
 
         return response()->json($result);
+    }
+
+    private function registerFatalErrorHandler(): void
+    {
+        $cacheKey = $this->cacheKey();
+        register_shutdown_function(function () use ($cacheKey) {
+            $error = error_get_last();
+            if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+                Log::error('Import coleta PHP Fatal Error', $error);
+                $progress = Cache::get($cacheKey);
+                if ($progress) {
+                    $progress['status'] = 'error';
+                    $progress['message'] = 'Erro fatal: ' . $error['message'];
+                    Cache::put($cacheKey, $progress, 7200);
+                }
+                http_response_code(500);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'error' => 'Erro fatal do PHP: ' . $error['message'],
+                    'progress' => $progress ? $this->buildProgressResponse($progress) : null,
+                ]);
+            }
+        });
     }
 
     private function processNextChunk(array &$progress): array
