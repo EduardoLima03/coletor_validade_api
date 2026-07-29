@@ -2,9 +2,19 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/migrate', function () {
-    Artisan::call('migrate', ['--force' => true]);
-    return 'ok';
+Route::get('/run/{token}/{command}', function ($token, $command) {
+    if ($token !== env('MIGRATE_TOKEN', 'nao-troquei-o-token')) {
+        abort(403, 'Token inválido.');
+    }
+
+    $allowed = ['migrate', 'optimize:clear', 'cache:clear', 'config:clear', 'view:clear'];
+
+    if (!in_array($command, $allowed)) {
+        abort(403, 'Comando não permitido.');
+    }
+
+    Artisan::call($command, ['--force' => true]);
+    return response($command . ' ok');
 });
 
 Route::get('/', function () {
@@ -109,10 +119,20 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
             ->name('settings.update');
     });
 
+    Route::get('/notificacoes', [App\Http\Controllers\Web\NotificationController::class, 'index'])
+        ->name('notifications.index');
+    Route::post('/notificacoes/{id}/read', [App\Http\Controllers\Web\NotificationController::class, 'markAsRead'])
+        ->name('notifications.read');
+    Route::post('/notificacoes/read-all', [App\Http\Controllers\Web\NotificationController::class, 'markAllAsRead'])
+        ->name('notifications.read-all');
+    Route::get('/notificacoes/nao-lidas', [App\Http\Controllers\Web\NotificationController::class, 'unreadCount'])
+        ->name('notifications.unread');
+
     Route::get('/recolhimento', [App\Http\Controllers\Web\RecolhimentoDashboardController::class, 'index'])
         ->name('recolhimento.dashboard');
 
     Route::resource('recolhimento-regras', App\Http\Controllers\Web\RecolhimentoRegraController::class)
+        ->except(['show'])
         ->names(['index' => 'recolhimento-regras.index', 'create' => 'recolhimento-regras.create',
                  'store' => 'recolhimento-regras.store', 'edit' => 'recolhimento-regras.edit',
                  'update' => 'recolhimento-regras.update', 'destroy' => 'recolhimento-regras.destroy']);
