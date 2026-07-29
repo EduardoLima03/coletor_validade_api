@@ -17,12 +17,13 @@ class BarcodeController extends Controller
 
     public function index()
     {
-        return $this->barcode->with('product')->get();
+        return $this->barcode->with('product')->paginate(50);
     }
 
     public function store(StoreBarcodeRequest $request)
     {
-        return $this->barcode->create($request->validated());
+        $barcode = $this->barcode->create($request->validated());
+        return response()->json($barcode, 201);
     }
 
     public function show($id)
@@ -68,7 +69,7 @@ class BarcodeController extends Controller
             ->first();
 
         if (!$product) {
-            return response()->json(['Erro' => 'Produto nao encontrado'], 404);
+            return response()->json(['error' => 'Produto nao encontrado'], 404);
         }
 
         return response()->json($product, 200);

@@ -37,22 +37,26 @@ class ColetaController extends Controller
 
         $areaAuditoriaId = $validated["area_auditoria_id"] ?? null;
 
-        $existing = Coleta::withTrashed()
-            ->where("loja_id", $validated["loja_id"])
-            ->where("area_auditoria_id", $areaAuditoriaId)
-            ->where("ean", $validated["ean"])
-            ->where("data_validade", $validated["validade"])
-            ->whereNull("recolhido_em")
-            ->first();
+        try {
+            $coleta = DB::transaction(function () use ($validated, $action, $areaAuditoriaId) {
+                $existing = Coleta::withTrashed()
+                    ->where("loja_id", $validated["loja_id"])
+                    ->where(function ($q) use ($areaAuditoriaId) {
+                        $areaAuditoriaId
+                            ? $q->where("area_auditoria_id", $areaAuditoriaId)
+                            : $q->whereNull("area_auditoria_id");
+                    })
+                    ->where("ean", $validated["ean"])
+                    ->whereDate("data_validade", $validated["validade"])
+                ->whereNull("recolhido_em")
+                ->lockForUpdate()
+                ->first();
 
-        if (!$action && $existing) {
-            return response()->json([
-                "message" => "Já existe uma coleta com este EAN, área, loja e validade.",
-                "existing" => $existing->load("loja", "user", "areaAuditoria", "barcode.product"),
-            ], 409);
-        }
-
-        $coleta = DB::transaction(function () use ($validated, $action, $existing, $areaAuditoriaId) {
+            if (!$action && $existing) {
+                throw new \App\Exceptions\DuplicateColetaException(
+                    $existing->load("loja", "user", "areaAuditoria", "barcode.product")
+                );
+            }
             if ($action === "replace" && $existing) {
                 $oldQty = $existing->quantidade;
 
@@ -158,8 +162,14 @@ class ColetaController extends Controller
             return $nova;
         });
 
-        $statusCode = $action ? 200 : 201;
-        return response()->json($coleta->load("loja", "user", "areaAuditoria", "barcode.product"), $statusCode);
+            $statusCode = $action ? 200 : 201;
+            return response()->json($coleta->load("loja", "user", "areaAuditoria", "barcode.product"), $statusCode);
+        } catch (\App\Exceptions\DuplicateColetaException $e) {
+            return response()->json([
+                "message" => $e->getMessage(),
+                "existing" => $e->coleta->load("loja", "user", "areaAuditoria", "barcode.product"),
+            ], 409);
+        }
     }
 
     public function update(Request $request, $id)
@@ -218,9 +228,13 @@ class ColetaController extends Controller
 
         $existing = Coleta::withTrashed()
             ->where("loja_id", $validated["loja_id"])
-            ->where("area_auditoria_id", $areaAuditoriaId)
+            ->where(function ($q) use ($areaAuditoriaId) {
+                $areaAuditoriaId
+                    ? $q->where("area_auditoria_id", $areaAuditoriaId)
+                    : $q->whereNull("area_auditoria_id");
+            })
             ->where("ean", $validated["ean"])
-            ->where("data_validade", $validated["validade"])
+            ->whereDate("data_validade", $validated["validade"])
             ->whereNull("recolhido_em")
             ->first();
 

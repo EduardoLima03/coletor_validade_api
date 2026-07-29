@@ -9,6 +9,6 @@ class LojaController extends Controller
 {
     public function index()
     {
-        return Loja::orderBy('nome')->get(['id', 'nome']);
+        return Loja::orderBy('nome')->paginate(50, ['id', 'nome']);
     }
 }

@@ -18,7 +18,9 @@ return new class extends Migration
     public function down()
     {
         Schema::table('coletas', function (Blueprint $table) {
-            $table->dropForeign(['recolhido_user_id']);
+            if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+                $table->dropForeign(['recolhido_user_id']);
+            }
             $table->dropColumn(['recolhido_em', 'recolhido_quantidade', 'recolhido_user_id']);
         });
     }

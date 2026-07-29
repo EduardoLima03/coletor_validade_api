@@ -18,6 +18,6 @@ class AreaAuditoriaController extends Controller
             });
         }
 
-        return response()->json($query->get());
+        return response()->json($query->paginate(50));
     }
 }

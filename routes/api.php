@@ -3,8 +3,8 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/login', [App\Http\Controllers\UserController::class, 'login']);
-Route::post('/user', [App\Http\Controllers\UserController::class, 'store']);
+Route::post('/login', [App\Http\Controllers\UserController::class, 'login'])
+    ->middleware('throttle:10,1');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -13,8 +13,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/profile/update', [App\Http\Controllers\UserController::class, 'updateProfile']);
 
-    Route::get('product-by-code', [App\Http\Controllers\ProductController::class, 'findByCode']);
-    Route::get('product-by-code/{code}', [App\Http\Controllers\ProductController::class, 'findByCode2']);
+    Route::get('product-by-code/{code?}', [App\Http\Controllers\ProductController::class, 'findByCode']);
     Route::get('by-ean/{ean}', [App\Http\Controllers\BarcodeController::class, 'findByEan']);
 
     Route::post('coleta', [App\Http\Controllers\Api\ColetaController::class, 'store']);
@@ -46,5 +45,6 @@ Route::middleware(['auth:sanctum', 'role:GERENCIA,ADMIN'])->group(function () {
 });
 
 Route::middleware(['auth:sanctum', 'role:ADMIN'])->group(function () {
+    Route::post('user', [App\Http\Controllers\UserController::class, 'store']);
     Route::post('user-update/{id}', [App\Http\Controllers\UserController::class, 'update']);
 });

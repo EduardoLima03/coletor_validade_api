@@ -14,22 +14,34 @@ return new class extends Migration
                 ->after("loja_id")
                 ->constrained("areas_auditoria")
                 ->nullOnDelete();
+        });
 
+        Schema::table("coletas", function (Blueprint $table) {
             $table->dropUnique("coleta_unique");
             $table->unique(["loja_id", "area_auditoria_id", "ean", "data_validade"], "coleta_unique");
-
-            $table->dropColumn("setor");
         });
+
+        if (Schema::hasColumn('coletas', 'setor')) {
+            Schema::table("coletas", function (Blueprint $table) {
+                $table->dropColumn("setor");
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table("coletas", function (Blueprint $table) {
-            $table->string("setor")->nullable()->after("loja_id");
+        if (!Schema::hasColumn('coletas', 'setor')) {
+            Schema::table("coletas", function (Blueprint $table) {
+                $table->string("setor")->nullable()->after("loja_id");
+            });
+        }
 
+        Schema::table("coletas", function (Blueprint $table) {
             $table->dropUnique("coleta_unique");
             $table->unique(["loja_id", "setor", "ean", "data_validade"], "coleta_unique");
+        });
 
+        Schema::table("coletas", function (Blueprint $table) {
             $table->dropConstrainedForeignId("area_auditoria_id");
         });
     }

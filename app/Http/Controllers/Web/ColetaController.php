@@ -126,7 +126,7 @@ class ColetaController extends Controller
         ));
     }
 
-    public function exportXlsx(Request $request)
+    public function export(Request $request, string $format = 'xlsx')
     {
         return Excel::download(
             new ColetasExport(
@@ -142,27 +142,7 @@ class ColetaController extends Controller
                 $request->data_coleta_inicio,
                 $request->data_coleta_fim
             ),
-            "coletas.xlsx"
-        );
-    }
-
-    public function exportCsv(Request $request)
-    {
-        return Excel::download(
-            new ColetasExport(
-                $request->loja_id,
-                $request->dias,
-                $request->data_inicio,
-                $request->data_fim,
-                auth()->user(),
-                $request->user_id,
-                $request->ean,
-                $request->descricao,
-                $request->area_auditoria_id,
-                $request->data_coleta_inicio,
-                $request->data_coleta_fim
-            ),
-            "coletas.csv"
+            "coletas.{$format}"
         );
     }
 

@@ -50,8 +50,6 @@ class UserController extends Controller
         ]);
 
         $data['password'] = Hash::make($data['password']);
-        $data['coleta_edit'] = $request->boolean('coleta_edit');
-        $data['coleta_delete'] = $request->boolean('coleta_delete');
 
         $user = User::create($data);
 
@@ -99,9 +97,6 @@ class UserController extends Controller
         } else {
             unset($data['password']);
         }
-
-        $data['coleta_edit'] = $request->boolean('coleta_edit');
-        $data['coleta_delete'] = $request->boolean('coleta_delete');
 
         $user->update($data);
 

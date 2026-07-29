@@ -85,7 +85,7 @@ class ImportProdutosJob implements ShouldQueue
             $message .= ", Erros: {$stats['errors']}";
         }
 
-        AuditLog::log('import', 'csv', $this->userId, "Importou CSV (job): {$message}");
+        AuditLog::log('import', 'csv', 0, "Importou CSV (job): {$message}", $this->userId);
     }
 
     private function processBatch(array $batch, array &$stats): void

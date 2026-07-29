@@ -443,8 +443,8 @@ class ImportController extends Controller
             return \Illuminate\Support\Facades\Storage::path($path);
         }
 
-        $default = base_path('VALIDADE.csv');
-        return file_exists($default) ? $default : null;
+        $default = config('import.default_csv_path');
+        return $default && file_exists($default) ? $default : null;
     }
 
     private function buildProgressResponse(array $progress): array

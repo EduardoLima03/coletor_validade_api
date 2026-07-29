@@ -6,6 +6,7 @@ use App\Models\Coleta;
 use App\Models\RecolhimentoRegra;
 use App\Models\Notification;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class RecolhimentoService
 {
@@ -114,7 +115,10 @@ class RecolhimentoService
 
         $totalRegistros = (clone $query)->count();
         $totalQuantidade = (clone $query)->sum('recolhido_quantidade');
-        $totalValor = (clone $query)->get()->sum(fn($c) => $c->valor_recolhido);
+        $totalValor = (clone $query)
+            ->leftJoin('barcodes', 'coletas.ean', '=', 'barcodes.ean')
+            ->leftJoin('products', 'barcodes.product_id', '=', 'products.id')
+            ->sum(DB::raw('coletas.recolhido_quantidade * COALESCE(products.custo, 0)'));
         $produtosDistintos = (clone $query)->distinct('ean')->count('ean');
 
         $porLoja = (clone $query)
@@ -143,35 +147,31 @@ class RecolhimentoService
 
     private function comparativoMensal(array $filters): Collection
     {
-        $query = Coleta::recolhidos()->with('barcode.product');
+        $query = Coleta::recolhidos();
 
         if (!empty($filters['loja_id'])) {
             $query->where('loja_id', $filters['loja_id']);
         }
 
-        $meses = $query
-            ->selectRaw("DATE_FORMAT(recolhido_em, '%Y-%m') as mes")
+        $dateFormat = config('database.default') === 'sqlite'
+            ? "strftime('%Y-%m', recolhido_em)"
+            : "DATE_FORMAT(recolhido_em, '%Y-%m')";
+
+        return $query
+            ->selectRaw("{$dateFormat} as mes")
             ->selectRaw('COUNT(*) as total_registros')
             ->selectRaw('SUM(recolhido_quantidade) as total_quantidade')
+            ->selectRaw('SUM(recolhido_quantidade * COALESCE(products.custo, 0)) as total_valor')
+            ->leftJoin('barcodes', 'coletas.ean', '=', 'barcodes.ean')
+            ->leftJoin('products', 'barcodes.product_id', '=', 'products.id')
             ->groupBy('mes')
             ->orderBy('mes')
             ->get()
-            ->map(function ($item) {
-                $coletasMes = Coleta::recolhidos()
-                    ->whereRaw("DATE_FORMAT(recolhido_em, '%Y-%m') = ?", [$item->mes]);
-                if (!empty($filters['loja_id'])) {
-                    $coletasMes->where('loja_id', $filters['loja_id']);
-                }
-                $valor = $coletasMes->get()->sum(fn($c) => $c->valor_recolhido);
-
-                return [
-                    'mes' => $item->mes,
-                    'total_registros' => $item->total_registros,
-                    'total_quantidade' => (float) $item->total_quantidade,
-                    'total_valor' => round($valor, 2),
-                ];
-            });
-
-        return $meses;
+            ->map(fn($item) => [
+                'mes' => $item->mes,
+                'total_registros' => $item->total_registros,
+                'total_quantidade' => (float) $item->total_quantidade,
+                'total_valor' => round((float) $item->total_valor, 2),
+            ]);
     }
 }

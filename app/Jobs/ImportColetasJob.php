@@ -81,8 +81,9 @@ class ImportColetasJob implements ShouldQueue
         AuditLog::log(
             "Importou coletas: {$this->filePath}",
             'import',
-            $this->userId,
-            $descLog
+            0,
+            $descLog,
+            $this->userId
         );
     }
 
