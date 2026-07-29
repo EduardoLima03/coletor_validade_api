@@ -6,12 +6,18 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', [App\Http\Controllers\UserController::class, 'login'])
     ->middleware('throttle:10,1');
 
+Route::post('/license/validate', [App\Http\Controllers\Api\LicenseController::class, 'validate'])
+    ->middleware('throttle:30,1');
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
 
     Route::post('/profile/update', [App\Http\Controllers\UserController::class, 'updateProfile']);
+
+    Route::get('/license/status', [App\Http\Controllers\Api\LicenseController::class, 'status'])
+        ->middleware('license');
 
     Route::get('product-by-code/{code?}', [App\Http\Controllers\ProductController::class, 'findByCode']);
     Route::get('by-ean/{ean}', [App\Http\Controllers\BarcodeController::class, 'findByEan']);

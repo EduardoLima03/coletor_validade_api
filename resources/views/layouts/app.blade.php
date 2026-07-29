@@ -278,6 +278,12 @@
                             <i class="bi bi-gear-wide-connected"></i> Configurações
                         </a>
                     </div>
+                    <div class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('admin.licenses.*') ? 'active' : '' }}"
+                           href="{{ route('admin.licenses.index') }}">
+                            <i class="bi bi-key"></i> Licenças
+                        </a>
+                    </div>
                 @endif
             </nav>
             <div class="sidebar-footer">
