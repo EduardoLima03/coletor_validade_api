@@ -44,4 +44,27 @@ class LicenseController extends Controller
             'max_users' => $license->max_users,
         ]);
     }
+
+    public function heartbeat(Request $request)
+    {
+        $request->validate(['license_key' => 'required|string']);
+
+        $license = License::where('license_key', $request->license_key)->first();
+
+        if (!$license) {
+            return response()->json([
+                'valid' => false,
+                'error' => 'Licença não encontrada.',
+                'server_time' => now()->toIso8601String(),
+            ], 404);
+        }
+
+        return response()->json([
+            'valid' => $license->isValid(),
+            'plan' => $license->plan,
+            'client_name' => $license->client_name,
+            'valid_until' => $license->valid_until->format('Y-m-d'),
+            'server_time' => now()->toIso8601String(),
+        ]);
+    }
 }

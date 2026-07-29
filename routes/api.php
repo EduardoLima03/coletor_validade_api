@@ -9,6 +9,9 @@ Route::post('/login', [App\Http\Controllers\UserController::class, 'login'])
 Route::post('/license/validate', [App\Http\Controllers\Api\LicenseController::class, 'validate'])
     ->middleware('throttle:30,1');
 
+Route::post('/license/heartbeat', [App\Http\Controllers\Api\LicenseController::class, 'heartbeat'])
+    ->middleware('throttle:60,1');
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
