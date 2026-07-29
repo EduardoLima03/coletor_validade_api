@@ -160,6 +160,25 @@
 <script>
 let importRunning = false;
 let importTotal = 0;
+let retryAttempt = 0;
+const MAX_RETRIES = 5;
+
+async function fetchJson(url, options) {
+    const res = await fetch(url, options);
+    if (!res.ok) {
+        let msg = 'Erro HTTP ' + res.status;
+        try {
+            const body = await res.json();
+            if (body.error) msg = body.error;
+            else if (body.message) msg = body.message;
+        } catch (e) {
+            const text = await res.text().catch(function () { return ''; });
+            if (text && text.length < 500) msg = text;
+        }
+        throw new Error(msg);
+    }
+    return res.json();
+}
 
 function extractError(d) {
     if (d && d.error) return d.error;
@@ -187,32 +206,31 @@ function startImport() {
     }
 
     importRunning = true;
+    retryAttempt = 0;
     document.getElementById('import-overlay').classList.remove('d-none');
     updateProgress(0, 'Iniciando...');
     showDetail('');
 
     formData.append('_token', document.querySelector('input[name="_token"]').value);
-    fetch('{{ route("admin.importar.coletas.start") }}', {
+    fetchJson('{{ route("admin.importar.coletas.start") }}', {
         method: 'POST',
         headers: { 'Accept': 'application/json' },
         body: formData
-    })
-    .then(function (r) {
-        if (!r.ok) { return r.json().then(function (d) { throw new Error(extractError(d)); }); }
-        return r.json();
     })
     .then(function (data) {
         if (data.error) { showError(data.error); return; }
         importTotal = data.total;
         processChunks();
     })
-    .catch(function (e) { showError(e.message || 'Erro ao iniciar importação.'); });
+    .catch(function (err) { showError(err.message || 'Erro ao iniciar importação.'); });
 }
 
 function processChunks() {
     if (!importRunning) return;
 
-    fetch('{{ route("admin.importar.coletas.chunk") }}', {
+    updateProgress(null, 'Processando... (' + (importTotal > 0 ? '... de ' + importTotal : '') + ')');
+
+    fetchJson('{{ route("admin.importar.coletas.chunk") }}', {
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
@@ -220,41 +238,56 @@ function processChunks() {
             'Accept': 'application/json'
         }
     })
-    .then(function (r) {
-        if (!r.ok) { return r.json().then(function (d) { throw new Error(extractError(d)); }); }
-        return r.json();
-    })
     .then(function (data) {
         if (data.error) { showError(data.error); return; }
+        retryAttempt = 0;
 
         var p = data.progress;
 
         updateProgress(p.percent, 'Processando... (' + p.processed + ' de ' + p.total + ')');
-        showDetail(
+        var detail =
             'Importadas: ' + p.importadas +
             ' | Areas criadas: ' + p.areas_criadas +
-            (p.erros > 0 ? ' | Erros: ' + p.erros : '')
-        );
+            (p.erros > 0 ? ' | Erros: ' + p.erros : '');
+        if (data.warning) {
+            detail = '⚠️ ' + data.warning + ' | ' + detail;
+        }
+        showDetail(detail);
 
         if (data.done) {
             importRunning = false;
             document.getElementById('import-overlay').classList.add('d-none');
             showResult(p);
         } else {
-            setTimeout(processChunks, 100);
+            setTimeout(processChunks, 500);
         }
     })
-    .catch(function (e) { showError(e.message || 'Erro ao processar lote.'); });
+    .catch(function (err) {
+        retryAttempt++;
+        if (retryAttempt <= MAX_RETRIES) {
+            var delay = Math.min(1000 * Math.pow(2, retryAttempt), 16000);
+            showDetail('Falha na conexão. Tentativa ' + retryAttempt + ' de ' + MAX_RETRIES + ' em ' + (delay / 1000) + 's...');
+            setTimeout(processChunks, delay);
+        } else {
+            showError('Erro ao processar lote após ' + MAX_RETRIES + ' tentativas: ' + err.message);
+        }
+    });
 }
 
 function updateProgress(percent, status) {
     var bar = document.getElementById('overlay-bar');
-    bar.style.width = percent + '%';
-    bar.setAttribute('aria-valuenow', percent);
-    bar.textContent = percent + '%';
-    if (percent >= 100) {
-        bar.classList.remove('bg-success');
-        bar.classList.add('bg-warning');
+    if (percent !== null) {
+        bar.style.width = percent + '%';
+        bar.setAttribute('aria-valuenow', percent);
+        bar.textContent = percent + '%';
+        if (percent >= 100) {
+            bar.classList.remove('bg-success');
+            bar.classList.add('bg-warning');
+        }
+    } else {
+        bar.style.width = '100%';
+        bar.classList.add('progress-bar-animated');
+        bar.textContent = '...';
     }
     document.getElementById('overlay-status').textContent = status;
 }
@@ -276,8 +309,25 @@ function showResult(p) {
         title.textContent = 'Importação concluída com sucesso';
     }
 
+    var errorsHtml = '';
+    if (p.error_details && p.error_details.length > 0) {
+        var rows = p.error_details.map(function(e) {
+            return '<tr><td>' + e.line + '</td><td>' + (e.ean || '') + '</td><td class="text-danger">' + e.reason + '</td></tr>';
+        }).join('');
+        errorsHtml =
+            '<div class="mt-3">' +
+            '<button class="btn btn-sm btn-outline-danger w-100" type="button" data-bs-toggle="collapse" data-bs-target="#errorDetails">' +
+            '<i class="bi bi-exclamation-triangle"></i> Ver detalhes dos ' + p.erros + ' erro(s)' +
+            '</button>' +
+            '<div class="collapse mt-2" id="errorDetails">' +
+            '<div class="table-responsive" style="max-height: 250px; overflow-y: auto;">' +
+            '<table class="table table-sm table-bordered mb-0">' +
+            '<thead class="table-secondary"><tr><th>Linha</th><th>EAN</th><th>Motivo</th></tr></thead>' +
+            '<tbody>' + rows + '</tbody></table></div></div></div>';
+    }
+
     body.innerHTML =
-        '<p>' + p.message + '</p>' +
+        '<p>' + (p.message || '') + '</p>' +
         '<table class="table table-sm table-bordered mb-0">' +
         '<tr><td>Total de linhas</td><td><strong>' + p.total + '</strong></td></tr>' +
         '<tr><td>Processadas</td><td><strong>' + p.processed + '</strong></td></tr>' +
@@ -285,7 +335,8 @@ function showResult(p) {
         '<tr><td>Puladas</td><td><strong>' + p.puladas + '</strong></td></tr>' +
         '<tr><td>Áreas criadas</td><td><strong>' + p.areas_criadas + '</strong></td></tr>' +
         (p.erros > 0 ? '<tr><td>Erros</td><td><strong class="text-danger">' + p.erros + '</strong></td></tr>' : '') +
-        '</table>';
+        '</table>' +
+        errorsHtml;
 
     var modal = new bootstrap.Modal(document.getElementById('result-modal'));
     modal.show();

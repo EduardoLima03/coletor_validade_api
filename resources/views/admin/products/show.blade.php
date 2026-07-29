@@ -30,6 +30,10 @@
                         <td>{{ $product->description }}</td>
                     </tr>
                     <tr>
+                        <th class="text-muted">Custo Unitário</th>
+                        <td>R$ {{ number_format($product->custo ?? 0, 2, ',', '.') }}</td>
+                    </tr>
+                    <tr>
                         <th class="text-muted">Criado em</th>
                         <td>{{ $product->created_at->format('d/m/Y H:i:s') }}</td>
                     </tr>

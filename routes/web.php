@@ -3,6 +3,9 @@
 use Illuminate\Support\Facades\Route;
 
 Route::get('/migrate', function () {
+    if (!app()->environment('local')) {
+        abort(404);
+    }
     Artisan::call('migrate', ['--force' => true]);
     return 'ok';
 });
@@ -34,10 +37,9 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
         ->name('coletas.trashed');
     Route::put('/coletas/{coleta}/restore', [App\Http\Controllers\Web\ColetaController::class, 'restore'])
         ->name('coletas.restore');
-    Route::get('/coletas/exportar/xlsx', [App\Http\Controllers\Web\ColetaController::class, 'exportXlsx'])
-        ->name('coletas.export.xlsx');
-    Route::get('/coletas/exportar/csv', [App\Http\Controllers\Web\ColetaController::class, 'exportCsv'])
-        ->name('coletas.export.csv');
+    Route::get('/coletas/exportar/{format}', [App\Http\Controllers\Web\ColetaController::class, 'export'])
+        ->whereIn('format', ['xlsx', 'csv'])
+        ->name('coletas.export');
     Route::get('/coletas/{coleta}/edit', [App\Http\Controllers\Web\ColetaController::class, 'edit'])
         ->name('coletas.edit');
     Route::put('/coletas/{coleta}', [App\Http\Controllers\Web\ColetaController::class, 'update'])
@@ -108,4 +110,12 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
         Route::put('/configuracoes', [App\Http\Controllers\Web\SettingController::class, 'update'])
             ->name('settings.update');
     });
+
+    Route::get('/recolhimento', [App\Http\Controllers\Web\RecolhimentoDashboardController::class, 'index'])
+        ->name('recolhimento.dashboard');
+
+    Route::resource('recolhimento-regras', App\Http\Controllers\Web\RecolhimentoRegraController::class)
+        ->names(['index' => 'recolhimento-regras.index', 'create' => 'recolhimento-regras.create',
+                 'store' => 'recolhimento-regras.store', 'edit' => 'recolhimento-regras.edit',
+                 'update' => 'recolhimento-regras.update', 'destroy' => 'recolhimento-regras.destroy']);
 });

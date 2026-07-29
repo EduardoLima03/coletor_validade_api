@@ -53,7 +53,11 @@ class DashboardController extends Controller
         $coletasVencidas = (clone $query)->whereDate("data_validade", "<", now())->count();
         $coletasAte5 = (clone $query)->whereBetween("data_validade", [now(), now()->addDays(5)])->count();
         $coletasAte15 = (clone $query)->whereBetween("data_validade", [now(), now()->addDays(15)])->count();
-        $produtosDistintos = (clone $query)->distinct("descricao")->count("descricao");
+        $produtosDistintos = (clone $query)
+            ->join('barcodes', 'coletas.ean', '=', 'barcodes.ean')
+            ->join('products', 'barcodes.product_id', '=', 'products.id')
+            ->distinct('products.id')
+            ->count('products.id');
         $eansDistintos = (clone $query)->distinct("ean")->count("ean");
 
         $coletasPorLoja = (clone $query)

@@ -1,12 +1,12 @@
 #!/bin/bash
 set -e
 
-ENV_FILE=".env"
+CONFIG_FILE="config/app.php"
 COMPOSE_FILE="docker-compose.prod.yml"
 OUTPUT_TAR="../datacheck-image.tar"
 
-# Read current version
-APP_VERSION=$(grep -oP '^APP_VERSION=\K.*' "$ENV_FILE" 2>/dev/null || echo "1.0.0")
+# Read current version from config/app.php
+APP_VERSION=$(grep -oP "'version'\s*=>\s*'\K[^']+" "$CONFIG_FILE" 2>/dev/null || echo "1.0.0")
 
 # Increment patch version
 IFS='.' read -r major minor patch <<< "$APP_VERSION"
@@ -17,9 +17,8 @@ echo "=== datacheck build ==="
 echo "  Versao anterior: $APP_VERSION"
 echo "  Nova versao:     $NEW_VERSION"
 
-# Update .env
-sed -i "s/^APP_VERSION=.*/APP_VERSION=$NEW_VERSION/" "$ENV_FILE"
-export APP_VERSION="$NEW_VERSION"
+# Update config/app.php
+sed -i "s/'version'\s*=>\s*'[^']*'/'version' => '$NEW_VERSION'/" "$CONFIG_FILE"
 
 # Build
 docker compose -f "$COMPOSE_FILE" build --no-cache 2>&1

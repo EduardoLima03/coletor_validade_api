@@ -17,11 +17,13 @@ return new class extends Migration
 
         DB::statement('INSERT INTO area_auditoria_loja (area_auditoria_id, loja_id) SELECT id, loja_id FROM areas_auditoria');
 
-        Schema::table('areas_auditoria', function (Blueprint $table) {
-            $table->dropForeign(['loja_id']);
-            $table->dropUnique(['loja_id', 'nome']);
-            $table->dropColumn('loja_id');
-        });
+        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+            Schema::table('areas_auditoria', function (Blueprint $table) {
+                $table->dropForeign(['loja_id']);
+                $table->dropUnique(['loja_id', 'nome']);
+                $table->dropColumn('loja_id');
+            });
+        }
     }
 
     public function down(): void

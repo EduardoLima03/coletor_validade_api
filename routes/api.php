@@ -3,8 +3,8 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/login', [App\Http\Controllers\UserController::class, 'login']);
-Route::post('/user', [App\Http\Controllers\UserController::class, 'store']);
+Route::post('/login', [App\Http\Controllers\UserController::class, 'login'])
+    ->middleware('throttle:10,1');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -13,8 +13,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/profile/update', [App\Http\Controllers\UserController::class, 'updateProfile']);
 
-    Route::get('product-by-code', [App\Http\Controllers\ProductController::class, 'findByCode']);
-    Route::get('product-by-code/{code}', [App\Http\Controllers\ProductController::class, 'findByCode2']);
+    Route::get('product-by-code/{code?}', [App\Http\Controllers\ProductController::class, 'findByCode']);
     Route::get('by-ean/{ean}', [App\Http\Controllers\BarcodeController::class, 'findByEan']);
 
     Route::post('coleta', [App\Http\Controllers\Api\ColetaController::class, 'store']);
@@ -23,6 +22,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('lojas', [App\Http\Controllers\Api\LojaController::class, 'index']);
     Route::get('areas-auditoria', [App\Http\Controllers\Api\AreaAuditoriaController::class, 'index']);
+
+    // Route::prefix('notifications')->group(function () {
+    //     Route::get('/', [App\Http\Controllers\Api\NotificationController::class, 'index']);
+    //     Route::post('/{id}/read', [App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
+    //     Route::post('/read-all', [App\Http\Controllers\Api\NotificationController::class, 'markAllAsRead']);
+    // });
+
+    Route::get('recolhimento/produtos/{lojaId}', [App\Http\Controllers\Api\RecolhimentoController::class, 'produtos']);
+    Route::get('recolhimento/pendentes/{lojaId}', [App\Http\Controllers\Api\RecolhimentoController::class, 'pendentes']);
+    Route::post('recolhimento/registrar', [App\Http\Controllers\Api\RecolhimentoController::class, 'registrar']);
 });
 
 Route::middleware(['auth:sanctum', 'role:GERENCIA,ADMIN'])->group(function () {
@@ -36,5 +45,6 @@ Route::middleware(['auth:sanctum', 'role:GERENCIA,ADMIN'])->group(function () {
 });
 
 Route::middleware(['auth:sanctum', 'role:ADMIN'])->group(function () {
+    Route::post('user', [App\Http\Controllers\UserController::class, 'store']);
     Route::post('user-update/{id}', [App\Http\Controllers\UserController::class, 'update']);
 });

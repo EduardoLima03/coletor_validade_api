@@ -50,10 +50,10 @@
         <a href="{{ route("admin.coletas.trashed") }}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-archive"></i> Excluídos
         </a>
-        <a href="{{ route("admin.coletas.export.xlsx", request()->query()) }}" class="btn btn-success btn-sm">
+        <a href="{{ route("admin.coletas.export", ["format" => "xlsx", ...request()->query()]) }}" class="btn btn-success btn-sm">
             <i class="bi bi-file-earmark-excel"></i> Excel
         </a>
-        <a href="{{ route("admin.coletas.export.csv", request()->query()) }}" class="btn btn-secondary btn-sm">
+        <a href="{{ route("admin.coletas.export", ["format" => "csv", ...request()->query()]) }}" class="btn btn-secondary btn-sm">
             <i class="bi bi-file-earmark-spreadsheet"></i> CSV
         </a>
         <button onclick="window.print()" class="btn btn-outline-dark btn-sm">

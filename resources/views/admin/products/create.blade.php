@@ -42,6 +42,19 @@
                 @enderror
             </div>
 
+            <div class="mb-3">
+                <label for="custo" class="form-label">Custo Unitário (R$)</label>
+                <input type="text"
+                       class="form-control @error('custo') is-invalid @enderror"
+                       id="custo"
+                       name="custo"
+                       value="{{ old('custo', '0,00') }}"
+                       placeholder="0,00">
+                @error('custo')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+
             <button type="submit" class="btn btn-success">
                 <i class="bi bi-check-lg"></i> Salvar
             </button>

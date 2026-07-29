@@ -61,7 +61,7 @@
             <div class="card-header"><strong>Upload de arquivo CSV</strong></div>
             <div class="card-body">
                 <p class="text-muted">
-                    Ou faça upload de um arquivo CSV com as colunas: <code>COD</code>, <code>DESCRICAO</code>, <code>EAN</code>.
+                    Ou faça upload de um arquivo CSV com as colunas: <code>COD</code>, <code>DESCRICAO</code>, <code>EAN</code> (e opcionalmente <code>CUSTO</code>).
                 </p>
                 <form id="upload-form">
                     @csrf
@@ -94,20 +94,29 @@
                         <tr>
                             <th>Coluna</th>
                             <th>Exemplo</th>
+                            <th>Obrigatório</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td><code>COD</code></td>
                             <td>1500104</td>
+                            <td>Sim</td>
                         </tr>
                         <tr>
                             <td><code>DESCRICAO</code></td>
                             <td>FEIJAO CORDA PRECIOSO 1KG</td>
+                            <td>Sim</td>
                         </tr>
                         <tr>
                             <td><code>EAN</code></td>
                             <td>7898926342068</td>
+                            <td>Sim</td>
+                        </tr>
+                        <tr>
+                            <td><code>CUSTO</code></td>
+                            <td>5,99</td>
+                            <td>Não (0,00 se vazio)</td>
                         </tr>
                     </tbody>
                 </table>
@@ -182,10 +191,30 @@
 let importRunning = false;
 let importTotal = 0;
 let importProcessed = 0;
+let retryAttempt = 0;
+const MAX_RETRIES = 5;
+
+async function fetchJson(url, options) {
+    const res = await fetch(url, options);
+    if (!res.ok) {
+        let msg = 'Erro HTTP ' + res.status;
+        try {
+            const body = await res.json();
+            if (body.error) msg = body.error;
+            else if (body.message) msg = body.message;
+        } catch (e) {
+            const text = await res.text().catch(function () { return ''; });
+            if (text && text.length < 500) msg = text;
+        }
+        throw new Error(msg);
+    }
+    return res.json();
+}
 
 function startImport(type) {
     if (importRunning) return;
     importRunning = true;
+    retryAttempt = 0;
 
     document.getElementById('import-overlay').classList.remove('d-none');
     updateProgress(0, 'Iniciando...');
@@ -208,37 +237,37 @@ function startImport(type) {
 
 function startImportWithFile(formData) {
     formData.append('_token', document.querySelector('input[name="_token"]').value);
-    fetch('{{ route("admin.import.start") }}', {
+    fetchJson('{{ route("admin.import.start") }}', {
         method: 'POST',
         body: formData
     })
-    .then(function (r) { return r.json(); })
     .then(function (data) {
         if (data.error) { showError(data.error); return; }
         importTotal = data.total;
         processChunks();
     })
-    .catch(function () { showError('Erro ao iniciar importação.'); });
+    .catch(function (err) { showError(err.message || 'Erro ao iniciar importação.'); });
 }
 
 function startImportWithDefault() {
-    fetch('{{ route("admin.import.start") }}', {
+    fetchJson('{{ route("admin.import.start") }}', {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value, 'Accept': 'application/json' }
     })
-    .then(function (r) { return r.json(); })
     .then(function (data) {
         if (data.error) { showError(data.error); return; }
         importTotal = data.total;
         processChunks();
     })
-    .catch(function () { showError('Erro ao iniciar importação.'); });
+    .catch(function (err) { showError(err.message || 'Erro ao iniciar importação.'); });
 }
 
 function processChunks() {
     if (!importRunning) return;
 
-    fetch('{{ route("admin.import.chunk") }}', {
+    updateProgress(null, 'Processando... (' + importProcessed + ' de ' + importTotal + ')');
+
+    fetchJson('{{ route("admin.import.chunk") }}', {
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
@@ -246,41 +275,59 @@ function processChunks() {
             'Accept': 'application/json'
         }
     })
-    .then(function (r) { return r.json(); })
     .then(function (data) {
         if (data.error) { showError(data.error); return; }
+        retryAttempt = 0;
 
         var p = data.progress;
         importProcessed = p.processed;
 
         updateProgress(p.percent, 'Processando... (' + p.processed + ' de ' + p.total + ')');
-        showDetail(
+        var detail =
             'Produtos criados: ' + p.created_products +
             ' | Atualizados: ' + p.updated_products +
             ' | EANs criados: ' + p.created_barcodes +
             ' | Pulados: ' + p.skipped_barcodes +
-            (p.errors > 0 ? ' | Erros: ' + p.errors : '')
-        );
+            (p.errors > 0 ? ' | Erros: ' + p.errors : '');
+        if (data.warning) {
+            detail = '⚠️ ' + data.warning + ' | ' + detail;
+        }
+        showDetail(detail);
 
         if (data.done) {
             importRunning = false;
             document.getElementById('import-overlay').classList.add('d-none');
             showResult(p);
         } else {
-            setTimeout(processChunks, 100);
+            setTimeout(processChunks, 500);
         }
     })
-    .catch(function () { showError('Erro ao processar lote.'); });
+    .catch(function (err) {
+        retryAttempt++;
+        if (retryAttempt <= MAX_RETRIES) {
+            var delay = Math.min(1000 * Math.pow(2, retryAttempt), 16000);
+            showDetail('Falha na conexão. Tentativa ' + retryAttempt + ' de ' + MAX_RETRIES + ' em ' + (delay / 1000) + 's...');
+            setTimeout(processChunks, delay);
+        } else {
+            showError('Erro ao processar lote após ' + MAX_RETRIES + ' tentativas: ' + err.message);
+        }
+    });
 }
 
 function updateProgress(percent, status) {
     var bar = document.getElementById('overlay-bar');
-    bar.style.width = percent + '%';
-    bar.setAttribute('aria-valuenow', percent);
-    bar.textContent = percent + '%';
-    if (percent >= 100) {
-        bar.classList.remove('bg-success');
-        bar.classList.add('bg-warning');
+    if (percent !== null) {
+        bar.style.width = percent + '%';
+        bar.setAttribute('aria-valuenow', percent);
+        bar.textContent = percent + '%';
+        if (percent >= 100) {
+            bar.classList.remove('bg-success');
+            bar.classList.add('bg-warning');
+        }
+    } else {
+        bar.style.width = '100%';
+        bar.classList.add('progress-bar-animated');
+        bar.textContent = '...';
     }
     document.getElementById('overlay-status').textContent = status;
 }

@@ -239,6 +239,19 @@
                         <i class="bi bi-clipboard-data"></i> Coletas
                     </a>
                 </div>
+                <div class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.recolhimento*') ? 'active' : '' }}"
+                       href="{{ route('admin.recolhimento.dashboard') }}">
+                        <i class="bi bi-box-seam"></i> Recolhimento
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.recolhimento-regras.*') ? 'active' : '' }}"
+                       href="{{ route('admin.recolhimento-regras.index') }}">
+                        <i class="bi bi-gear"></i> Regras de Recolhimento
+                    </a>
+                </div>
+                {{-- Notificações desativadas --}}
                 @if (in_array(strtoupper(auth()->user()->position ?? ''), ['ADMIN']))
         <div class="nav-section">Administração</div>
         <div class="nav-item">
@@ -299,7 +312,7 @@
                     </button>
                     <span class="fw-semibold d-none d-md-inline">@yield('title', 'Dashboard')</span>
                 </div>
-                <div>
+                <div class="d-flex align-items-center gap-3">
                     <span class="text-muted small">
                         <i class="bi bi-calendar3"></i> {{ now()->format('d/m/Y') }}
                     </span>
@@ -349,6 +362,8 @@
             document.getElementById('sidebar')?.classList.remove('show');
             document.getElementById('sidebarOverlay')?.classList.remove('show');
         });
+
+        {{-- Notificações polling desativado --}}
     </script>
     @stack('scripts')
 </body>

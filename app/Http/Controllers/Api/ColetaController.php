@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Coleta;
-use App\Models\Barcode;
 use App\Models\Loja;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -28,37 +27,40 @@ class ColetaController extends Controller
             "loja_id" => "required|exists:lojas,id",
             "area_auditoria_id" => "nullable|exists:areas_auditoria,id",
             "ean" => "required|string|max:20",
-            "quantidade" => "required|string|max:50",
+            "quantidade" => "required|numeric|min:0",
             "unidade" => "nullable|string|max:10",
             "validade" => "required|date",
-            "descricao" => "nullable|string|max:255",
             "action" => "nullable|in:replace,add",
         ]);
 
-        $descricao = $validated["descricao"] ?? $this->buscarDescricao($validated["ean"]);
         $action = $validated["action"] ?? null;
 
         $areaAuditoriaId = $validated["area_auditoria_id"] ?? null;
 
-        $existing = Coleta::withTrashed()
-            ->where("loja_id", $validated["loja_id"])
-            ->where("area_auditoria_id", $areaAuditoriaId)
-            ->where("ean", $validated["ean"])
-            ->where("data_validade", $validated["validade"])
-            ->first();
+        try {
+            $coleta = DB::transaction(function () use ($validated, $action, $areaAuditoriaId) {
+                $existing = Coleta::withTrashed()
+                    ->where("loja_id", $validated["loja_id"])
+                    ->where(function ($q) use ($areaAuditoriaId) {
+                        $areaAuditoriaId
+                            ? $q->where("area_auditoria_id", $areaAuditoriaId)
+                            : $q->whereNull("area_auditoria_id");
+                    })
+                    ->where("ean", $validated["ean"])
+                    ->whereDate("data_validade", $validated["validade"])
+                ->whereNull("recolhido_em")
+                ->lockForUpdate()
+                ->first();
 
-        if (!$action && $existing) {
-            return response()->json([
-                "message" => "Já existe uma coleta com este EAN, área, loja e validade.",
-                "existing" => $existing->load("loja", "user", "areaAuditoria", "barcode.product"),
-            ], 409);
-        }
-
-        $coleta = DB::transaction(function () use ($validated, $descricao, $action, $existing, $areaAuditoriaId) {
+            if (!$action && $existing) {
+                throw new \App\Exceptions\DuplicateColetaException(
+                    $existing->load("loja", "user", "areaAuditoria", "barcode.product")
+                );
+            }
             if ($action === "replace" && $existing) {
                 $oldQty = $existing->quantidade;
 
-                if ($validated["quantidade"] == "0" || $validated["quantidade"] === "0") {
+                if ((float) $validated["quantidade"] == 0) {
                     $existing->delete();
                     $lojaNome = $this->lojaNome($validated['loja_id']);
                     AuditLog::log(
@@ -79,6 +81,7 @@ class ColetaController extends Controller
                     "quantidade" => $validated["quantidade"],
                     "unidade" => $validated["unidade"] ?? "un",
                     "user_id" => auth()->id(),
+                    "datahora" => now(),
                 ]);
 
                 $lojaNome = $this->lojaNome($validated['loja_id']);
@@ -94,7 +97,7 @@ class ColetaController extends Controller
             }
 
             if ($action === "add" && $existing) {
-                if ($validated["quantidade"] == "0" || $validated["quantidade"] === "0") {
+                if ((float) $validated["quantidade"] == 0) {
                     $existing->delete();
                     $lojaNome = $this->lojaNome($validated['loja_id']);
                     AuditLog::log(
@@ -112,17 +115,15 @@ class ColetaController extends Controller
                     $existing->update([
                         "quantidade" => $validated["quantidade"],
                         "unidade" => $validated["unidade"] ?? "un",
+                        "datahora" => now(),
                     ]);
                 } else {
-                    $oldQty = $existing->quantidade;
-                    if (is_numeric($oldQty) && is_numeric($validated["quantidade"])) {
-                        $newQty = $oldQty + $validated["quantidade"];
-                    } else {
-                        $newQty = $validated["quantidade"];
-                    }
+                    $oldQty = (float) $existing->quantidade;
+                    $newQty = $oldQty + (float) $validated["quantidade"];
                     $existing->update([
                         "quantidade" => $newQty,
                         "unidade" => $validated["unidade"] ?? "un",
+                        "datahora" => now(),
                     ]);
                 }
 
@@ -142,7 +143,6 @@ class ColetaController extends Controller
                 "loja_id" => $validated["loja_id"],
                 "area_auditoria_id" => $areaAuditoriaId,
                 "user_id" => auth()->id(),
-                "descricao" => $descricao,
                 "ean" => $validated["ean"],
                 "quantidade" => $validated["quantidade"],
                 "unidade" => $validated["unidade"] ?? "un",
@@ -162,8 +162,14 @@ class ColetaController extends Controller
             return $nova;
         });
 
-        $statusCode = $action ? 200 : 201;
-        return response()->json($coleta->load("loja", "user", "areaAuditoria", "barcode.product"), $statusCode);
+            $statusCode = $action ? 200 : 201;
+            return response()->json($coleta->load("loja", "user", "areaAuditoria", "barcode.product"), $statusCode);
+        } catch (\App\Exceptions\DuplicateColetaException $e) {
+            return response()->json([
+                "message" => $e->getMessage(),
+                "existing" => $e->coleta->load("loja", "user", "areaAuditoria", "barcode.product"),
+            ], 409);
+        }
     }
 
     public function update(Request $request, $id)
@@ -171,12 +177,12 @@ class ColetaController extends Controller
         $coleta = Coleta::findOrFail($id);
 
         $validated = $request->validate([
-            "quantidade" => "required|string|max:50",
+            "quantidade" => "required|numeric|min:0",
             "unidade" => "nullable|string|max:10",
             "validade" => "required|date",
         ]);
 
-        if ($validated["quantidade"] === "0" || $validated["quantidade"] == 0) {
+        if ((float) $validated["quantidade"] == 0) {
             $coleta->delete();
 
             $lojaNome = $this->lojaNome($coleta->loja_id);
@@ -222,9 +228,14 @@ class ColetaController extends Controller
 
         $existing = Coleta::withTrashed()
             ->where("loja_id", $validated["loja_id"])
-            ->where("area_auditoria_id", $areaAuditoriaId)
+            ->where(function ($q) use ($areaAuditoriaId) {
+                $areaAuditoriaId
+                    ? $q->where("area_auditoria_id", $areaAuditoriaId)
+                    : $q->whereNull("area_auditoria_id");
+            })
             ->where("ean", $validated["ean"])
-            ->where("data_validade", $validated["validade"])
+            ->whereDate("data_validade", $validated["validade"])
+            ->whereNull("recolhido_em")
             ->first();
 
         return response()->json([
@@ -261,12 +272,4 @@ class ColetaController extends Controller
         return response()->json($coleta->load("loja", "user", "areaAuditoria", "barcode.product"));
     }
 
-    private function buscarDescricao($ean)
-    {
-        $barcode = Barcode::where("ean", $ean)->with("product")->first();
-        if ($barcode && $barcode->product) {
-            return $barcode->product->description;
-        }
-        return "Produto não encontrado";
-    }
 }

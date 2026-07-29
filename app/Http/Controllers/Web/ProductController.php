@@ -40,6 +40,7 @@ class ProductController extends Controller
         $data = $request->validate([
             'code' => 'required|integer|unique:products,code',
             'description' => 'required|string|max:255',
+            'custo' => 'nullable|regex:/^[\d.,]*$/',
         ]);
 
         $product = Product::create($data);
@@ -70,6 +71,7 @@ class ProductController extends Controller
         $data = $request->validate([
             'code' => 'required|integer|unique:products,code,' . $product->id,
             'description' => 'required|string|max:255',
+            'custo' => 'nullable|regex:/^[\d.,]*$/',
         ]);
 
         $product->update($data);

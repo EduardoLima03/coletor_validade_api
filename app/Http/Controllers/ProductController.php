@@ -11,7 +11,7 @@ class ProductController extends Controller
 {
     public function index()
     {
-        return Product::with('barcodes')->get();
+        return Product::with('barcodes')->paginate(50);
     }
 
     public function store(StoreProductRequest $request)
@@ -40,21 +40,15 @@ class ProductController extends Controller
         return response()->json(['message' => 'Produto deletado com sucesso.'], 200);
     }
 
-    public function findByCode(Request $request)
+    public function findByCode(Request $request, $code = null)
     {
-        $request->validate(['code' => 'required|integer']);
-        $product = Product::where('code', $request->code)->with('barcodes')->first();
-        if (!$product) {
-            return response()->json(['Erro' => 'Produto nao encontrado'], 404);
+        $code = $code ?? $request->code;
+        if (!$code) {
+            return response()->json(['error' => 'Código é obrigatório.'], 400);
         }
-        return response()->json($product, 200);
-    }
-
-    public function findByCode2($code)
-    {
         $product = Product::where('code', $code)->with('barcodes')->first();
         if (!$product) {
-            return response()->json(['Erro' => 'Produto nao encontrado'], 404);
+            return response()->json(['error' => 'Produto nao encontrado'], 404);
         }
         return response()->json($product, 200);
     }

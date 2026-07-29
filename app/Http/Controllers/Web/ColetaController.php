@@ -33,7 +33,8 @@ class ColetaController extends Controller
 
     public function index(Request $request)
     {
-        $query = Coleta::with("loja", "areaAuditoria", "user", "barcode.product");
+        $query = Coleta::with("loja", "areaAuditoria", "user", "barcode.product")
+            ->whereNull("recolhido_em");
         $query = $this->lojaFilter($query);
 
         if ($request->filled("loja_id")) {
@@ -62,7 +63,9 @@ class ColetaController extends Controller
         }
 
         if ($request->filled("descricao")) {
-            $query->where("descricao", "like", "%{$request->descricao}%");
+            $query->whereHas("barcode.product", function ($q) use ($request) {
+                $q->where("description", "like", "%{$request->descricao}%");
+            });
         }
 
         if ($request->filled("area_auditoria_id")) {
@@ -82,7 +85,7 @@ class ColetaController extends Controller
             'loja' => 'lojas.nome',
             'auditor' => 'users.name',
             'setor' => 'areas_auditoria.nome',
-            'descricao' => 'coletas.descricao',
+            'descricao' => 'products.description',
             'ean' => 'coletas.ean',
             'quantidade' => 'coletas.quantidade',
             'unidade' => 'coletas.unidade',
@@ -103,6 +106,8 @@ class ColetaController extends Controller
         $query->leftJoin('lojas', 'coletas.loja_id', '=', 'lojas.id')
               ->leftJoin('users', 'coletas.user_id', '=', 'users.id')
               ->leftJoin('areas_auditoria', 'coletas.area_auditoria_id', '=', 'areas_auditoria.id')
+              ->leftJoin('barcodes', 'coletas.ean', '=', 'barcodes.ean')
+              ->leftJoin('products', 'barcodes.product_id', '=', 'products.id')
               ->select('coletas.*');
 
         $query->orderBy($sortMap[$sort], $direction);
@@ -121,7 +126,7 @@ class ColetaController extends Controller
         ));
     }
 
-    public function exportXlsx(Request $request)
+    public function export(Request $request, string $format = 'xlsx')
     {
         return Excel::download(
             new ColetasExport(
@@ -137,27 +142,7 @@ class ColetaController extends Controller
                 $request->data_coleta_inicio,
                 $request->data_coleta_fim
             ),
-            "coletas.xlsx"
-        );
-    }
-
-    public function exportCsv(Request $request)
-    {
-        return Excel::download(
-            new ColetasExport(
-                $request->loja_id,
-                $request->dias,
-                $request->data_inicio,
-                $request->data_fim,
-                auth()->user(),
-                $request->user_id,
-                $request->ean,
-                $request->descricao,
-                $request->area_auditoria_id,
-                $request->data_coleta_inicio,
-                $request->data_coleta_fim
-            ),
-            "coletas.csv"
+            "coletas.{$format}"
         );
     }
 
@@ -201,7 +186,7 @@ class ColetaController extends Controller
 
         $validated = $request->validate([
             "area_auditoria_id" => "nullable|exists:areas_auditoria,id",
-            "quantidade" => "required|string|max:50",
+            "quantidade" => "required|numeric|min:0",
             "unidade" => "nullable|string|max:10",
             "data_validade" => "required|date",
         ]);
