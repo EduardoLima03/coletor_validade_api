@@ -109,6 +109,11 @@ Route::middleware(['auth', 'role:GERENCIA,ADMIN'])->prefix('admin')->name('admin
             ->name('settings.index');
         Route::put('/configuracoes', [App\Http\Controllers\Web\SettingController::class, 'update'])
             ->name('settings.update');
+
+        Route::resource('licenses', App\Http\Controllers\Web\LicenseController::class)
+            ->names(['index' => 'admin.licenses.index', 'create' => 'admin.licenses.create',
+                     'store' => 'admin.licenses.store', 'edit' => 'admin.licenses.edit',
+                     'update' => 'admin.licenses.update', 'destroy' => 'admin.licenses.destroy']);
     });
 
     Route::get('/recolhimento', [App\Http\Controllers\Web\RecolhimentoDashboardController::class, 'index'])
