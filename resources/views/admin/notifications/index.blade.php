@@ -6,7 +6,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0"><i class="bi bi-bell"></i> Notificações</h4>
     <div class="d-flex gap-2">
-        <form action="{{ route('admin.notificacoes.mark-all-read') }}" method="POST">
+        <form action="{{ route('admin.notifications.read-all') }}" method="POST">
             @csrf
             <button type="submit" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-check-all"></i> Marcar todas como lidas
@@ -40,7 +40,7 @@
                     <p class="mb-0 text-muted small">{{ $notif->message }}</p>
                 </div>
                 @if (!$notif->read_at)
-                    <form action="{{ route('admin.notificacoes.mark-read', $notif->id) }}" method="POST">
+                    <form action="{{ route('admin.notifications.read', $notif->id) }}" method="POST">
                         @csrf
                         <button type="submit" class="btn btn-sm btn-outline-secondary" title="Marcar como lida">
                             <i class="bi bi-check"></i>

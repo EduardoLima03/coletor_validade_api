@@ -15,11 +15,11 @@ use Illuminate\Support\Facades\Log;
 class ColetaImportController extends Controller
 {
     private const CACHE_PREFIX = 'coleta_import_progress_';
-    private const CHUNK_SIZE = 100;
-    private const BATCH_SIZE = 25;
+    private const CHUNK_SIZE = 30;
+    private const BATCH_SIZE = 10;
     private const MAX_ERROR_DETAILS = 100;
     private const MAX_RETRIES = 3;
-    private const TIME_LIMIT_SAFETY = 5;
+    private const TIME_LIMIT_SAFETY = 10;
 
     public function showForm()
     {

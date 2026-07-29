@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <title>@yield('title', 'Datacheck - ' . ($companySetting->company_name ?? 'Medeiros'))</title>
+    <title>@yield('title', 'ValiCheck - ' . ($companySetting->company_name ?? 'Medeiros'))</title>
     <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -186,11 +186,11 @@
         <aside class="sidebar" id="sidebar">
             <a class="sidebar-brand" href="{{ route('admin.dashboard') }}">
                 @if ($companySetting && $companySetting->company_icon)
-                    <img src="{{ asset('storage/' . $companySetting->company_icon) }}" alt="Datacheck">
+                    <img src="{{ asset('storage/' . $companySetting->company_icon) }}" alt="ValiCheck">
                 @else
-                    <img src="{{ asset('favicon.png') }}" alt="Datacheck">
+                    <img src="{{ asset('favicon.png') }}" alt="ValiCheck">
                 @endif
-                Datacheck - {{ $companySetting->company_name ?? 'Medeiros' }}
+                ValiCheck - {{ $companySetting->company_name ?? 'Medeiros' }}
             </a>
             <nav class="sidebar-nav">
                 @if (in_array(strtoupper(auth()->user()->position ?? ''), ['ADMIN']))
@@ -251,7 +251,13 @@
                         <i class="bi bi-gear"></i> Regras de Recolhimento
                     </a>
                 </div>
-                {{-- Notificações desativadas --}}
+                <div class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}"
+                       href="{{ route('admin.notifications.index') }}">
+                        <i class="bi bi-bell"></i> Notificações
+                        <span id="notif-badge" class="badge bg-danger ms-auto d-none">0</span>
+                    </a>
+                </div>
                 @if (in_array(strtoupper(auth()->user()->position ?? ''), ['ADMIN']))
         <div class="nav-section">Administração</div>
         <div class="nav-item">
@@ -342,7 +348,7 @@
             <div class="footer-dc">
                 <div class="d-flex justify-content-between align-items-center">
                     <span>
-                        <i class="bi bi-upc-scan"></i> Datacheck - Medeiros v{{ config('app.version') }}
+                        <i class="bi bi-upc-scan"></i> ValiCheck - Medeiros v{{ config('app.version') }}
                     </span>
                     <span>
                         CL Dev
@@ -363,7 +369,22 @@
             document.getElementById('sidebarOverlay')?.classList.remove('show');
         });
 
-        {{-- Notificações polling desativado --}}
+        function checkNotifCount() {
+            fetch('{{ route("admin.notifications.unread") }}')
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    var badge = document.getElementById('notif-badge');
+                    if (d.count > 0) {
+                        badge.classList.remove('d-none');
+                        badge.textContent = d.count;
+                    } else {
+                        badge.classList.add('d-none');
+                    }
+                })
+                .catch(function() {});
+        }
+        checkNotifCount();
+        setInterval(checkNotifCount, 30000);
     </script>
     @stack('scripts')
 </body>
