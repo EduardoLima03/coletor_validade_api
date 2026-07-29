@@ -9,7 +9,7 @@ Route::post('/login', [App\Http\Controllers\UserController::class, 'login'])
 Route::post('/license/validate', [App\Http\Controllers\Api\LicenseController::class, 'validate'])
     ->middleware('throttle:30,1');
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'license'])->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
@@ -40,7 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('recolhimento/registrar', [App\Http\Controllers\Api\RecolhimentoController::class, 'registrar']);
 });
 
-Route::middleware(['auth:sanctum', 'role:GERENCIA,ADMIN'])->group(function () {
+Route::middleware(['auth:sanctum', 'license', 'role:GERENCIA,ADMIN'])->group(function () {
     Route::get('coleta/trashed', [App\Http\Controllers\Api\ColetaController::class, 'trashed']);
     Route::put('coleta/{id}/restore', [App\Http\Controllers\Api\ColetaController::class, 'restore']);
 
@@ -50,7 +50,7 @@ Route::middleware(['auth:sanctum', 'role:GERENCIA,ADMIN'])->group(function () {
     Route::post('ean-save-all', [App\Http\Controllers\BarcodeController::class, 'saveAll']);
 });
 
-Route::middleware(['auth:sanctum', 'role:ADMIN'])->group(function () {
+Route::middleware(['auth:sanctum', 'license', 'role:ADMIN'])->group(function () {
     Route::post('user', [App\Http\Controllers\UserController::class, 'store']);
     Route::post('user-update/{id}', [App\Http\Controllers\UserController::class, 'update']);
 });

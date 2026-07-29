@@ -10,8 +10,7 @@ class CheckLicense
 {
     public function handle(Request $request, Closure $next)
     {
-        $licenseKey = $request->bearerToken()
-            ?? $request->header('X-License-Key')
+        $licenseKey = $request->header('X-License-Key')
             ?? $request->input('license_key');
 
         if (!$licenseKey) {
