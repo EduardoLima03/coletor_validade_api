@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'ValiCheck - Configurações')
+@section('title', 'Datacheck - Configurações')
 
 @section('content')
 <div class="container-admin">
@@ -26,7 +26,7 @@
                                value="{{ old('company_name', $setting->company_name) }}"
                                maxlength="100">
                         <div class="form-text">
-                            O nome será exibido como: <strong>ValiCheck - {{ old('company_name', $setting->company_name) }}</strong>
+                            O nome será exibido como: <strong>Datacheck - {{ old('company_name', $setting->company_name) }}</strong>
                         </div>
                         @error('company_name')
                             <div class="invalid-feedback">{{ $message }}</div>

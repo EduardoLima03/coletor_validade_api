@@ -1,4 +1,4 @@
-# ValiCheck - Medeiros
+# DataCheck - Medeiros
 
 Sistema de validação e consulta de produtos.
 

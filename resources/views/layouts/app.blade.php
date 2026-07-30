@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <title>@yield('title', 'ValiCheck - ' . ($companySetting->company_name ?? 'Medeiros'))</title>
+    <title>@yield('title', 'Datacheck - ' . ($companySetting->company_name ?? 'Medeiros'))</title>
     <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -186,11 +186,11 @@
         <aside class="sidebar" id="sidebar">
             <a class="sidebar-brand" href="{{ route('admin.dashboard') }}">
                 @if ($companySetting && $companySetting->company_icon)
-                    <img src="{{ asset('storage/' . $companySetting->company_icon) }}" alt="ValiCheck">
+                    <img src="{{ asset('storage/' . $companySetting->company_icon) }}" alt="Datacheck">
                 @else
-                    <img src="{{ asset('favicon.png') }}" alt="ValiCheck">
+                    <img src="{{ asset('favicon.png') }}" alt="Datacheck">
                 @endif
-                ValiCheck - {{ $companySetting->company_name ?? 'Medeiros' }}
+                Datacheck - {{ $companySetting->company_name ?? 'Medeiros' }}
             </a>
             <nav class="sidebar-nav">
                 @if (in_array(strtoupper(auth()->user()->position ?? ''), ['ADMIN']))
@@ -348,7 +348,7 @@
             <div class="footer-dc">
                 <div class="d-flex justify-content-between align-items-center">
                     <span>
-                        <i class="bi bi-upc-scan"></i> ValiCheck - Medeiros v{{ config('app.version') }}
+                        <i class="bi bi-upc-scan"></i> Datacheck - Medeiros v{{ config('app.version') }}
                     </span>
                     <span>
                         CL Dev
